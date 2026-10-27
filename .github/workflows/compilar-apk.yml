@@ -11,6 +11,11 @@ on:
       version:
         description: Versión (ej. 0.1.0)
         default: 0.1.0
+      formato:
+        description: "apk (probar en tu teléfono) o aab (subir a Google Play)"
+        type: choice
+        options: [apk, aab]
+        default: apk
 
 permissions:
   contents: write
@@ -52,6 +57,15 @@ jobs:
             '{nombre:$n, version:$v, codigo:$c}' > ProjectSettings/Forja3DApp.json
           cat ProjectSettings/Forja3DApp.json
 
+      - name: Keystore para firmar (solo AAB)
+        if: inputs.formato == 'aab'
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KS" ]; then echo "::error::[Forja3D] ERROR: faltan los secretos del keystore (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASS, ANDROID_KEYALIAS_NAME, ANDROID_KEYALIAS_PASS)"; exit 1; fi
+          echo "$KS" | base64 -d > android.keystore
+          echo "android.keystore" >> .git/info/exclude
+
       - name: Compilar con Unity
         uses: game-ci/unity-builder@v4
         env:
@@ -62,23 +76,27 @@ jobs:
           targetPlatform: Android
           buildName: juego
           buildMethod: Forja3DBuild.BuildAndroid
-          androidExportType: androidPackage
+          androidExportType: ${{ inputs.formato == 'aab' && 'androidAppBundle' || 'androidPackage' }}
+          customParameters: -formato ${{ inputs.formato || 'apk' }} -keystorePath android.keystore -keystorePass "${{ secrets.ANDROID_KEYSTORE_PASS }}" -keyaliasName "${{ secrets.ANDROID_KEYALIAS_NAME }}" -keyaliasPass "${{ secrets.ANDROID_KEYALIAS_PASS }}"
           versioning: None
           allowDirtyBuild: true
 
-      - name: Buscar el APK
+      - name: Buscar el archivo compilado
         id: apk
         run: |
-          APK=$(find build -name '*.apk' | head -n 1)
-          if [ -z "$APK" ]; then echo "No se generó ningún APK"; exit 1; fi
-          cp "$APK" juego.apk
-          echo "tam=$(du -h juego.apk | cut -f1)" >> "$GITHUB_OUTPUT"
+          EXT=${{ inputs.formato == 'aab' && 'aab' || 'apk' }}
+          F=$(find build -name "*.$EXT" | head -n 1)
+          if [ -z "$F" ]; then echo "::error::[Forja3D] ERROR: no se generó ningún .$EXT"; exit 1; fi
+          cp "$F" "juego.$EXT"
+          echo "archivo=juego.$EXT" >> "$GITHUB_OUTPUT"
+          echo "tam=$(du -h juego.$EXT | cut -f1)" >> "$GITHUB_OUTPUT"
+          rm -f android.keystore
 
       - name: Guardar como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: apk
-          path: juego.apk
+          name: juego
+          path: ${{ steps.apk.outputs.archivo }}
           retention-days: 30
 
       - name: Publicar Release con el APK
@@ -86,6 +104,6 @@ jobs:
         with:
           tag_name: apk-${{ github.run_number }}
           name: "${{ inputs.nombre_app }} v${{ inputs.version }} (compilación ${{ github.run_number }})"
-          body: "APK generado por Forja3D (${{ steps.apk.outputs.tam }}). Descárgalo en tu Android y ábrelo para instalar."
-          files: juego.apk
+          body: "${{ inputs.formato == 'aab' && 'AAB firmado para Google Play' || 'APK para instalar en tu Android' }} generado por Forja3D (${{ steps.apk.outputs.tam }})."
+          files: ${{ steps.apk.outputs.archivo }}
           make_latest: true

@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace Forja3D
 {
-    public enum Objetivo { Meta, Enemigos, Monedas }
+    public enum Objetivo { Meta, Enemigos, Monedas, Jefe }
 
     public class Forja3DGameManager : MonoBehaviour
     {
@@ -15,7 +15,8 @@ namespace Forja3D
 
         public static bool Terminado { get; private set; }
         static Forja3DGameManager inst;
-        static int enemigos, derrotados, monedas, recogidas;
+        static int enemigos, derrotados, monedas, recogidas, jefes, jefesDerrotados;
+        static System.Collections.Generic.List<Forja3DHealth> vidasJefe = new System.Collections.Generic.List<Forja3DHealth>();
 
         Forja3DHealth jugador;
         Text hud;
@@ -25,19 +26,21 @@ namespace Forja3D
 
         public static void RegistrarEnemigo() => enemigos++;
         public static void EnemigoDerrotado() { derrotados++; inst?.Revisar(); }
+        public static void RegistrarJefe(Forja3DHealth h) { jefes++; vidasJefe.Add(h); }
+        public static void JefeDerrotado() { jefesDerrotados++; inst?.Aviso("¡Jefe derrotado!"); inst?.Revisar(); }
         public static void RegistrarMoneda() => monedas++;
         public static void MonedaRecogida() { recogidas++; inst?.Revisar(); }
         public static void MetaAlcanzada()
         {
             if (inst == null || Terminado) return;
             if (inst.objetivo == Objetivo.Meta || inst.Cumplido()) inst.Ganar();
-            else inst.Aviso(inst.objetivo == Objetivo.Enemigos ? "¡Derrota a todos los enemigos primero!" : "¡Recoge todas las monedas primero!");
+            else inst.Aviso(inst.objetivo == Objetivo.Enemigos ? "¡Derrota a todos los enemigos primero!" : inst.objetivo == Objetivo.Jefe ? "¡Derrota al jefe primero!" : "¡Recoge todas las monedas primero!");
         }
 
         void Awake()
         {
             inst = this; Terminado = false;
-            enemigos = derrotados = monedas = recogidas = 0;
+            enemigos = derrotados = monedas = recogidas = jefes = jefesDerrotados = 0; vidasJefe.Clear();
             Application.targetFrameRate = 60;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             CrearUI();
@@ -56,6 +59,7 @@ namespace Forja3D
         {
             Objetivo.Enemigos => "\nObjetivo: derrota a todos los enemigos y llega a la meta",
             Objetivo.Monedas => "\nObjetivo: recoge todas las monedas y llega a la meta",
+            Objetivo.Jefe => "\nObjetivo: derrota al jefe y llega a la meta",
             _ => "\nObjetivo: llega a la meta verde",
         };
 
@@ -63,6 +67,7 @@ namespace Forja3D
         {
             Objetivo.Enemigos => derrotados >= enemigos,
             Objetivo.Monedas => recogidas >= monedas,
+            Objetivo.Jefe => jefesDerrotados >= jefes,
             _ => true,
         };
 
@@ -74,6 +79,7 @@ namespace Forja3D
             var t = $"VIDA {(jugador ? jugador.Vida : 0)}";
             if (enemigos > 0) t += $"    ENEMIGOS {derrotados}/{enemigos}";
             if (monedas > 0) t += $"    MONEDAS {recogidas}/{monedas}";
+            foreach (var j in vidasJefe) if (j && !j.Muerto) t += $"\nJEFE {new string('|', Mathf.CeilToInt(20f * j.Vida / Mathf.Max(1, j.vidaMaxima)))}";
             if (Time.time < mensajeHasta) t += "\n\n" + mensaje;
             hud.text = t;
         }

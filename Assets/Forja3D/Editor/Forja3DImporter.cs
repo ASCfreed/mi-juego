@@ -14,7 +14,7 @@ using UnityEngine.Networking;
 namespace Forja3D.EditorTools
 {
     [Serializable] public class Archivo { public string nombre; public string url; public string tipo; public string[] clips; }
-    [Serializable] public class Manifiesto { public int forja3d; public bool personaje; public Archivo[] archivos; }
+    [Serializable] public class Manifiesto { public int forja3d; public bool personaje; public string esqueleto; public string rig_type; public bool biblioteca; public Archivo[] archivos; }
 
     public class Forja3DImporter : EditorWindow
     {
@@ -94,6 +94,21 @@ namespace Forja3D.EditorTools
             }
         }
 
+        public static bool EsTripo(Manifiesto m) => m != null && string.Equals(m.esqueleto, "tripo", StringComparison.OrdinalIgnoreCase);
+
+        // Carpetas cuyo manifiesto dice "biblioteca": sus clips se comparten con todos los humanoides
+        public static List<string> CarpetasBiblioteca()
+        {
+            var res = new List<string>();
+            if (!Directory.Exists(Raiz)) return res;
+            foreach (var d in Directory.GetDirectories(Raiz))
+            {
+                var m = LeerManifiesto(d);
+                if (m != null && m.biblioteca && !EsTripo(m)) res.Add(d.Replace('\\', '/'));
+            }
+            return res;
+        }
+
         public static GameObject RutaPrefab(string modelo)
         {
             if (string.IsNullOrEmpty(modelo) || !Directory.Exists(Raiz)) return null;
@@ -119,7 +134,7 @@ namespace Forja3D.EditorTools
             var go = modelo != null ? AssetDatabase.LoadAssetAtPath<GameObject>(modelo) : null;
             if (!go) { Debug.LogWarning($"[Forja3D] {carpeta}: no hay FBX del modelo."); return null; }
 
-            AnimatorController ctrl = m.personaje ? CrearAnimator(carpeta, archivos) : null;
+            AnimatorController ctrl = m.personaje ? CrearAnimator(carpeta, archivos, !EsTripo(m)) : null;
             var inst = (GameObject)PrefabUtility.InstantiatePrefab(go);
             var b = Limites(inst);
             if (m.personaje)
@@ -155,12 +170,24 @@ namespace Forja3D.EditorTools
         }
 
         // Animator: locomoción (idle/caminar/correr por "Speed") + triggers de acciones + muerte.
-        static AnimatorController CrearAnimator(string carpeta, List<(Archivo a, string ruta)> archivos)
+        static AnimatorController CrearAnimator(string carpeta, List<(Archivo a, string ruta)> archivos, bool humanoide)
         {
             var clips = new Dictionary<string, AnimationClip>();
-            foreach (var (_, ruta) in archivos)
+            void Cargar(string ruta, bool sobrescribir)
+            {
                 foreach (var c in AssetDatabase.LoadAllAssetsAtPath(ruta).OfType<AnimationClip>())
-                    if (!c.name.StartsWith("__preview__")) clips[c.name.ToLowerInvariant()] = c;
+                {
+                    if (c.name.StartsWith("__preview__")) continue;
+                    var k = c.name.ToLowerInvariant();
+                    if (sobrescribir || !clips.ContainsKey(k)) clips[k] = c;
+                }
+            }
+            foreach (var (_, ruta) in archivos) Cargar(ruta, true);
+            // Humanoides: completa con los clips de la biblioteca (retargeting de Mecanim, sin gastar créditos)
+            if (humanoide)
+                foreach (var bib in CarpetasBiblioteca())
+                    if (!string.Equals(bib, carpeta, StringComparison.OrdinalIgnoreCase))
+                        foreach (var f in Directory.GetFiles(bib, "*.fbx")) Cargar(f.Replace('\\', '/'), false);
 
             AnimationClip Buscar(params string[] claves) =>
                 claves.Select(k => clips.TryGetValue(k, out var exacto) ? exacto
@@ -178,8 +205,15 @@ namespace Forja3D.EditorTools
             var loco = ctrl.CreateBlendTreeInController("Locomocion", out var arbol);
             arbol.blendParameter = "Speed";
             arbol.useAutomaticThresholds = false;
-            var idle = Buscar("idle") ?? Buscar("caminar", "walk");
+            var idle = Buscar("idle");
+            var caminarParaIdle = idle ? null : Buscar("caminar", "walk");
             if (idle) arbol.AddChild(idle, 0f);
+            else if (caminarParaIdle)
+            {
+                // Sin idle (p. ej. cuadrúpedos de Tripo): caminar casi detenido hace de reposo
+                arbol.AddChild(caminarParaIdle, 0f);
+                var hijos = arbol.children; hijos[hijos.Length - 1].timeScale = 0.15f; arbol.children = hijos;
+            }
             var caminar = Buscar("caminar", "walk"); if (caminar) arbol.AddChild(caminar, 2f);
             var correr = Buscar("correr_rapido", "correr", "run"); if (correr) arbol.AddChild(correr, 5.5f);
             sm.defaultState = loco;
@@ -252,7 +286,7 @@ namespace Forja3D.EditorTools
                 mi.isReadable = false;
                 return;
             }
-            mi.animationType = ModelImporterAnimationType.Human;
+            mi.animationType = Forja3DImporter.EsTripo(m) ? ModelImporterAnimationType.Generic : ModelImporterAnimationType.Human;
             mi.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
             mi.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
         }
@@ -270,12 +304,18 @@ namespace Forja3D.EditorTools
             if (clips == null || clips.Length == 0) return;
             // Nombra los clips en el mismo orden en que el conector los pidió
             string[] nombres = a.clips != null && a.clips.Length == clips.Length ? a.clips : clips.Length == 1 ? new[] { a.nombre } : null;
+            if (nombres == null && a.clips != null && a.clips.Length > 0)
+            {
+                // Tripo nombra los clips en lote NlaTrack, NlaTrack.001… en el orden pedido
+                var nla = clips.Select((c, idx) => (c, idx)).Where(x => x.c.name.Contains("NlaTrack")).ToList();
+                if (nla.Count == a.clips.Length) { nombres = clips.Select(c => c.name).ToArray(); for (int k = 0; k < nla.Count; k++) nombres[nla[k].idx] = a.clips[k]; }
+            }
             for (int i = 0; i < clips.Length; i++)
             {
                 if (nombres != null) clips[i].name = nombres[i];
                 var n = clips[i].name.ToLowerInvariant();
                 clips[i].loopTime = EnBucle.Any(k => n.Contains(k));
-                clips[i].lockRootRotation = clips[i].lockRootHeightY = clips[i].lockRootPositionXZ = true;
+                clips[i].lockRootRotation = clips[i].lockRootHeightY = clips[i].lockRootPositionXZ = !Forja3DImporter.EsTripo(m);
                 clips[i].keepOriginalOrientation = clips[i].keepOriginalPositionY = clips[i].keepOriginalPositionXZ = true;
             }
             mi.clipAnimations = clips;

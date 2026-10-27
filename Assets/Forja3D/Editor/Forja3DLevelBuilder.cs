@@ -83,6 +83,7 @@ namespace Forja3D.EditorTools
         {
             ['#'] = new Simbolo { tipo = "muro" }, ['.'] = new Simbolo { tipo = "suelo" }, [' '] = new Simbolo { tipo = "suelo" },
             ['P'] = new Simbolo { tipo = "jugador" }, ['M'] = new Simbolo { tipo = "meta" }, ['E'] = new Simbolo { tipo = "enemigo" },
+            ['J'] = new Simbolo { tipo = "jefe", vida = 15, escala = 2f },
             ['C'] = new Simbolo { tipo = "moneda" }, ['T'] = new Simbolo { tipo = "arbol" }, ['R'] = new Simbolo { tipo = "roca" },
         };
 
@@ -159,7 +160,8 @@ namespace Forja3D.EditorTools
                     switch (s.tipo)
                     {
                         case "jugador": inicio = p; Jugador(n, p, dinamicos); break;
-                        case "enemigo": Enemigo(s, p, dinamicos, id); break;
+                        case "enemigo": Enemigo(s, p, dinamicos, id, false); break;
+                        case "jefe": Enemigo(s, p, dinamicos, id, true); break;
                         case "moneda": Moneda(p, dinamicos, id); break;
                         case "meta": meta = p; Meta(p, c, dinamicos, id); break;
                     }
@@ -185,7 +187,7 @@ namespace Forja3D.EditorTools
             camGo.AddComponent<Forja3DCamera>().objetivo = GameObject.FindWithTag("Player").transform;
             var gm = new GameObject("Forja3D").AddComponent<Forja3DGameManager>();
             gm.titulo = n.titulo;
-            gm.objetivo = n.objetivo == "enemigos" ? Objetivo.Enemigos : n.objetivo == "monedas" ? Objetivo.Monedas : Objetivo.Meta;
+            gm.objetivo = n.objetivo == "enemigos" ? Objetivo.Enemigos : n.objetivo == "monedas" ? Objetivo.Monedas : n.objetivo == "jefe" ? Objetivo.Jefe : Objetivo.Meta;
 
             string ruta = $"{RutaGenerado}/Escenas/{id}.unity";
             EditorSceneManager.SaveScene(escena, ruta);
@@ -286,18 +288,25 @@ namespace Forja3D.EditorTools
             g.AddComponent<Forja3DPlayerController>().crearCamaraAutomatica = false;
         }
 
-        static void Enemigo(Simbolo s, Vector3 p, Transform padre, string id)
+        static void Enemigo(Simbolo s, Vector3 p, Transform padre, string id, bool jefe)
         {
-            var g = InstanciarModelo(s.modelo) ?? Capsula("Enemigo", Hex(s.color, new Color(0.85f, 0.2f, 0.2f)), id);
-            g.name = "Enemigo"; g.transform.SetParent(padre);
-            g.transform.position = p; g.transform.localScale *= Mathf.Max(0.2f, s.escala);
+            var g = InstanciarModelo(s.modelo) ?? Capsula(jefe ? "Jefe" : "Enemigo", Hex(s.color, jefe ? new Color(0.45f, 0.05f, 0.1f) : new Color(0.85f, 0.2f, 0.2f)), id);
+            g.name = jefe ? "Jefe" : "Enemigo"; g.transform.SetParent(padre);
+            float esc = Mathf.Max(0.2f, s.escala);
+            g.transform.position = p; g.transform.localScale *= esc;
             var cc = g.GetComponent<CharacterController>();
             float alto = cc ? cc.height : 2f, radio = cc ? cc.radius : 0.4f;
             if (cc) UnityEngine.Object.DestroyImmediate(cc);
             var col = g.AddComponent<CapsuleCollider>(); col.height = alto; col.radius = radio; col.center = Vector3.up * alto / 2f;
             var ag = g.AddComponent<NavMeshAgent>(); ag.height = alto; ag.radius = radio;
-            g.AddComponent<Forja3DHealth>().vidaMaxima = Mathf.Max(1, s.vida);
-            g.AddComponent<Forja3DEnemy>();
+            var h = g.AddComponent<Forja3DHealth>(); h.vidaMaxima = Mathf.Max(1, s.vida);
+            var e = g.AddComponent<Forja3DEnemy>();
+            if (jefe)
+            {
+                h.invulnerable = 0.35f;
+                e.esJefe = true; e.danio = 2; e.velocidad = 2.2f; e.enfriamiento = 1.8f;
+                e.radioDeteccion = 14f; e.radioAtaque = 1.6f * esc; e.radioPatrulla = 2f;
+            }
         }
 
         static void Moneda(Vector3 p, Transform padre, string id)

@@ -41,7 +41,7 @@ namespace Forja3D
     // Ayudas para que el Animator funcione aunque falten parámetros (según las animaciones generadas)
     public static class Forja3DAnim
     {
-        static bool Tiene(Animator a, string n, AnimatorControllerParameterType t)
+        public static bool Tiene(Animator a, string n, AnimatorControllerParameterType t)
         {
             if (!a || !a.runtimeAnimatorController) return false;
             foreach (var p in a.parameters) if (p.name == n && p.type == t) return true;
