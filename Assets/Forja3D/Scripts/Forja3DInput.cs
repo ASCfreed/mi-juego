@@ -3,6 +3,14 @@
 // (joystick, cámara o botón), así el joystick nunca mueve la cámara.
 using UnityEngine;
 
+// ── EXPANSIÓN FUTURA ───────────────────────────────────────────────────────────
+// PC / consolas: añadir soporte de mando (gamepad). Opción recomendada: instalar el paquete
+//   com.unity.inputsystem (Input System) y poner "Active Input Handling = Both" en Player Settings.
+//   Después, leer aquí Gamepad.current: leftStick → Mover, rightStick → Mirar,
+//   buttonSouth → Saltar, buttonWest → Atacar, leftTrigger → Correr.
+//   Todo el juego lee la entrada SOLO a través de esta clase, así que basta con cambiar este archivo.
+// iOS: funciona igual que Android (EsTactil es true en iPhone/iPad); no requiere cambios aquí.
+// ──────────────────────────────────────────────────────────────────────────────
 namespace Forja3D
 {
     public static class Forja3DInput
@@ -11,6 +19,7 @@ namespace Forja3D
         public static Vector2 MiradaTactil;     // grados acumulados este frame
         static int saltoFrame = -10, ataqueFrame = -10;
 
+        // PC con pantalla táctil también cuenta como táctil. Para PC con mando: añadir aquí "|| hayMando" a la inversa.
         public static bool EsTactil => Application.isMobilePlatform || Input.touchCount > 0;
 
         public static void PulsarSalto() => saltoFrame = Time.frameCount;

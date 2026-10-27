@@ -24,6 +24,9 @@ concurrency:
   group: compilar-apk
   cancel-in-progress: true
 
+# EXPANSIÓN FUTURA: para PC/iOS/Web, añadir otro job (o una matriz) con targetPlatform
+# StandaloneWindows64 / StandaloneLinux64 / WebGL en ubuntu-latest, o iOS / StandaloneOSX en macos-latest,
+# y un buildMethod propio en Assets/Editor/Forja3DBuild.cs (ver los comentarios allí).
 jobs:
   android:
     runs-on: ubuntu-latest

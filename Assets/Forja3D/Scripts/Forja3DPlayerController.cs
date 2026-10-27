@@ -3,6 +3,8 @@
 // Android: joystick, botones SALTAR/ATACAR y arrastrar a la derecha para girar la cámara.
 using UnityEngine;
 
+// EXPANSIÓN FUTURA: los controles vienen de Forja3DInput (táctil hoy; mando/teclado para PC después).
+// Los combos, esquivar y bloquear del guion se añadirían aquí como nuevos estados y triggers del Animator.
 namespace Forja3D
 {
     [RequireComponent(typeof(CharacterController))]

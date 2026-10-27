@@ -1,6 +1,8 @@
 // Forja3D — cámara orbital en tercera persona (ratón con clic derecho o arrastre táctil).
 using UnityEngine;
 
+// EXPANSIÓN FUTURA (PC/consolas): con mando, la cámara recibe el stick derecho a través de
+// Forja3DInput.Mirar; puede convenir una opción "invertir eje Y" y sensibilidad configurable en un menú.
 namespace Forja3D
 {
     public class Forja3DCamera : MonoBehaviour

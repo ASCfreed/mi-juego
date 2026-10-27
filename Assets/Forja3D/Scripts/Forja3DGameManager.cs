@@ -39,9 +39,11 @@ namespace Forja3D
 
         void Awake()
         {
+            // EXPANSIÓN FUTURA: en PC conviene un menú de pausa (Escape), opciones de gráficos y resolución;
+            // en iOS/Android, pausar al salir de la app (OnApplicationPause). Hoy el juego no tiene menú.
             inst = this; Terminado = false;
             enemigos = derrotados = monedas = recogidas = jefes = jefesDerrotados = 0; vidasJefe.Clear();
-            Application.targetFrameRate = 60;
+            Application.targetFrameRate = 60; // PC: dejar -1 y usar QualitySettings.vSyncCount = 1
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             CrearUI();
         }

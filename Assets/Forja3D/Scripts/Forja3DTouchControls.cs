@@ -7,6 +7,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+// ── EXPANSIÓN FUTURA ───────────────────────────────────────────────────────────
+// iOS: en iPhone con notch/isla dinámica, colocar los botones dentro de Screen.safeArea
+//   (convertir safeArea a coordenadas del canvas y desplazar 'raiz').
+// PC: este componente se desactiva solo fuera de móvil (mostrarEnPC = false).
+// Ajustes de jugabilidad: sensibilidadCamara, radioJoystick y las posiciones de Boton() en Start().
+// ──────────────────────────────────────────────────────────────────────────────
 namespace Forja3D
 {
     public class Forja3DTouchControls : MonoBehaviour

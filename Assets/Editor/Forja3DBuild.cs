@@ -9,6 +9,21 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
+// ── EXPANSIÓN FUTURA ───────────────────────────────────────────────────────────
+// Hoy solo se compila Android (APK para probar, AAB para Google Play).
+// Para añadir plataformas, copiar BuildAndroid() en métodos nuevos que reutilicen
+// PrepararTodo() + ConstruirTodos() y cambien solo el destino:
+//   · PC Windows: BuildTarget.StandaloneWindows64, salida "build/StandaloneWindows64/Juego.exe".
+//       En GitHub Actions: targetPlatform: StandaloneWindows64 (Mono funciona en ubuntu-latest).
+//   · PC Linux:   BuildTarget.StandaloneLinux64.
+//   · Mac:        BuildTarget.StandaloneOSX (para IL2CPP o firma, runner macos-latest).
+//   · iOS:        BuildTarget.iOS genera un proyecto de Xcode; compilarlo y firmarlo exige
+//       runner macos-latest, cuenta de Apple Developer y certificados (p. ej. con fastlane).
+//       Ajustes: PlayerSettings.iOS.targetOSVersionString, applicationIdentifier para NamedBuildTarget.iOS.
+//   · Web:        BuildTarget.WebGL (útil para pruebas en navegador).
+//   · Consolas (Switch/Xbox/PlayStation): requieren ser desarrollador aprobado y módulos de Unity
+//       bajo NDA; no se pueden compilar en GitHub Actions públicos.
+// ──────────────────────────────────────────────────────────────────────────────
 public static class Forja3DBuild
 {
     const string RutaApp = "ProjectSettings/Forja3DApp.json";
