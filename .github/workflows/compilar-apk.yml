@@ -1,0 +1,91 @@
+# Forja3D — compila el juego para Android en la nube (GameCI) y publica el APK como Release.
+# Lo lanza el conector con la herramienta compilar_apk (o tú desde la pestaña Actions → Run workflow).
+name: Compilar APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      nombre_app:
+        description: Nombre del juego
+        default: Juego Forja3D
+      version:
+        description: Versión (ej. 0.1.0)
+        default: 0.1.0
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compilar-apk
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Liberar espacio en disco (la imagen de Unity Android es grande)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          tool-cache: false
+
+      - uses: actions/checkout@v4
+
+      - name: Caché de Library (acelera compilaciones siguientes)
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-Android-
+
+      - name: Datos de la app
+        env:
+          NOMBRE: ${{ inputs.nombre_app }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p ProjectSettings
+          jq -n --arg n "$NOMBRE" --arg v "$VERSION" --argjson c ${{ github.run_number }} \
+            '{nombre:$n, version:$v, codigo:$c}' > ProjectSettings/Forja3DApp.json
+          cat ProjectSettings/Forja3DApp.json
+
+      - name: Compilar con Unity
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          buildName: juego
+          buildMethod: Forja3DBuild.BuildAndroid
+          androidExportType: androidPackage
+          versioning: None
+          allowDirtyBuild: true
+
+      - name: Buscar el APK
+        id: apk
+        run: |
+          APK=$(find build -name '*.apk' | head -n 1)
+          if [ -z "$APK" ]; then echo "No se generó ningún APK"; exit 1; fi
+          cp "$APK" juego.apk
+          echo "tam=$(du -h juego.apk | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: juego.apk
+          retention-days: 30
+
+      - name: Publicar Release con el APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: "${{ inputs.nombre_app }} v${{ inputs.version }} (compilación ${{ github.run_number }})"
+          body: "APK generado por Forja3D (${{ steps.apk.outputs.tam }}). Descárgalo en tu Android y ábrelo para instalar."
+          files: juego.apk
+          make_latest: true
