@@ -1,0 +1,15 @@
+{
+  "forja3d": 1,
+  "personaje": true,
+  "esqueleto": "tripo",
+  "rig_type": "quadruped",
+  "archivos": [
+    {
+      "nombre": "jefe",
+      "tipo": "modelo",
+      "clips": [
+        "caminar"
+      ]
+    }
+  ]
+}
