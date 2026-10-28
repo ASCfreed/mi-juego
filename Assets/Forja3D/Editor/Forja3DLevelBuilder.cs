@@ -605,8 +605,11 @@ namespace Forja3D.EditorTools
             ["muerte"] = 3.0f, ["caron"] = 2.7f, ["minos"] = 2.9f,
             ["pantera"] = 1.0f, ["leon"] = 1.3f, ["loba"] = 1.05f,
         };
+        // Los jefes se exageran un 30 % para que impongan
+        const float EscalaJefe = 1.3f;
         static float AlturaDe(string modelo, string tipo, bool fiera) =>
-            !string.IsNullOrEmpty(modelo) && Alturas.TryGetValue(modelo, out var h) ? h : fiera ? 1.1f : tipo == "jefe" ? 2.6f : 1.8f;
+            (!string.IsNullOrEmpty(modelo) && Alturas.TryGetValue(modelo, out var h) ? h : fiera ? 1.1f : tipo == "jefe" ? 2.6f : 1.8f)
+            * (tipo == "jefe" ? EscalaJefe : 1f);
 
         // Escala un modelo para que mida exactamente 'metros' de alto (los FBX de Meshy y Tripo llegan en unidades distintas)
         static void AjustarAltura(GameObject g, float metros)

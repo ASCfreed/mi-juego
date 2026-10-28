@@ -49,6 +49,8 @@ namespace Forja3D
         int golpesEnCadena;
 
         public bool Muerto => vida && vida.Muerto;
+        // Radio horizontal real (para separarse del jugador sin colisión física)
+        public float Radio => col is CapsuleCollider cap ? cap.radius * Mathf.Max(transform.lossyScale.x, transform.lossyScale.z) : 0.5f;
         public bool Aturdido => estado == Estado.Aturdido && Time.time < aturdidoHasta;
 
         void Awake()
@@ -291,6 +293,7 @@ namespace Forja3D
         {
             for (float t = 0; t < dur; t += Time.deltaTime)
             {
+                if (jugador && Vector3.Distance(jugador.position, transform.position) < Radio + 0.6f) break; // no se mete encima de Dante
                 if (agente.isOnNavMesh) agente.Move(transform.forward * (distancia / dur) * Time.deltaTime);
                 yield return null;
             }
@@ -377,6 +380,7 @@ namespace Forja3D
             var dir = transform.forward * Mathf.Min(1.6f, radioAtaque * 0.7f);
             for (float t = 0; t < 1f; t += Time.deltaTime / 0.4f)
             {
+                if (t < 0.5f && jugador && Vector3.Distance(jugador.position, transform.position) < Radio + 0.5f) continue;
                 if (agente.isOnNavMesh) agente.Move((ini + dir * Mathf.Sin(t * Mathf.PI) - transform.position));
                 yield return null;
             }

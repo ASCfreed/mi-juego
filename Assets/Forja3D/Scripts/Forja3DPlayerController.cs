@@ -55,6 +55,7 @@ namespace Forja3D
         float finCombo;
         Vector3 empuje;
         Vector3 ultimoSeguro; float fueraDesde = -1f, proximoChequeo;
+        int capaTorso = -1; float pesoTorso, parryHasta;
 
         void Awake()
         {
@@ -65,6 +66,7 @@ namespace Forja3D
             vida = GetComponent<Forja3DHealth>();
             if (anim) anim.applyRootMotion = false;
             Estamina = estaminaMaxima;
+            if (anim) { capaTorso = anim.GetLayerIndex("Torso"); if (capaTorso >= 0) anim.SetLayerWeight(capaTorso, 0f); }
         }
 
         void Start()
@@ -116,6 +118,14 @@ namespace Forja3D
             }
             Cubriendo = cubrir;
             Forja3DAnim.Bool(anim, "Block", Cubriendo);
+            // La capa del torso solo pesa mientras se cubre o hace parry: al soltar, los brazos vuelven a la animación normal
+            if (capaTorso >= 0)
+            {
+                float objetivo = Cubriendo || Time.time < parryHasta ? 1f : 0f;
+                pesoTorso = Mathf.MoveTowards(pesoTorso, objetivo, Time.deltaTime * (objetivo > pesoTorso ? 12f : 6f));
+                anim.SetLayerWeight(capaTorso, pesoTorso);
+            }
+            Separarse();
 
             // ── Esquivar ──
             if (libre && !esquivando && cc.isGrounded && Forja3DInput.Esquivar && Estamina >= costoEsquiva * 0.5f)
@@ -180,6 +190,24 @@ namespace Forja3D
             if (fueraDesde < 0f) fueraDesde = Time.time;
             bool cayendo = transform.position.y < ultimoSeguro.y - 4f;
             if (cayendo || Time.time - fueraDesde > 1.2f) Reubicar(ultimoSeguro);
+        }
+
+        // Los enemigos no chocan físicamente con Dante (así ningún jefe lo empuja por encima de un muro);
+        // en su lugar se separan con suavidad en horizontal.
+        readonly System.Collections.Generic.HashSet<Collider> ignorados = new System.Collections.Generic.HashSet<Collider>();
+        void Separarse()
+        {
+            foreach (var e in Forja3DEnemy.Activos)
+            {
+                if (!e) continue;
+                foreach (var c in e.GetComponentsInChildren<Collider>())
+                    if (ignorados.Add(c)) Physics.IgnoreCollision(cc, c, true);
+                if (e.Muerto) continue;
+                var d = transform.position - e.transform.position; d.y = 0;
+                float minimo = cc.radius * transform.lossyScale.x + e.Radio;
+                float dist = d.magnitude;
+                if (dist < minimo && dist > 0.001f) cc.Move(d / dist * Mathf.Min(minimo - dist, 6f * Time.deltaTime));
+            }
         }
 
         void Reubicar(Vector3 punto)
@@ -334,6 +362,7 @@ namespace Forja3D
                 // ¡PARRY!
                 if (enemigo) enemigo.Aturdir(1.8f);
                 Forja3DAnim.Trigger(anim, "Parry");
+                parryHasta = Time.time + 0.6f;
                 Forja3DFX.Chispas(punto, 40, true);
                 Forja3DFX.HitStop(0.16f, 0.02f);
                 Forja3DFX.Temblor(0.3f, 0.2f);

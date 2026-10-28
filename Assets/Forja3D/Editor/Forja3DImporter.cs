@@ -136,6 +136,9 @@ namespace Forja3D.EditorTools
 
             AnimatorController ctrl = m.personaje ? CrearAnimator(carpeta, archivos, !EsTripo(m)) : null;
             var inst = (GameObject)PrefabUtility.InstantiatePrefab(go);
+            // Texturas incrustadas en el FBX (Meshy/Tripo): se extraen y se arma el material a mano
+            var mat = MaterialEmbebido(carpeta, modelo);
+            if (mat) foreach (var r in inst.GetComponentsInChildren<Renderer>()) r.sharedMaterials = Enumerable.Repeat(mat, Mathf.Max(1, r.sharedMaterials.Length)).ToArray();
             var b = Limites(inst);
             if (m.personaje)
             {
@@ -158,6 +161,77 @@ namespace Forja3D.EditorTools
             var prefab = PrefabUtility.SaveAsPrefabAsset(inst, rutaPrefab);
             DestroyImmediate(inst);
             return prefab;
+        }
+
+        // Busca imágenes JPG/PNG guardadas dentro del FBX binario (propiedad 'Content', tipo R + longitud),
+        // las clasifica (color / mapa normal / grises) y crea un material Standard con color + relieve.
+        static Material MaterialEmbebido(string carpeta, string fbx)
+        {
+            string dir = $"{carpeta}/Texturas";
+            string rutaMat = $"{dir}/{Path.GetFileNameWithoutExtension(fbx)}.mat";
+            var previo = AssetDatabase.LoadAssetAtPath<Material>(rutaMat);
+            if (previo) return previo;
+            byte[] d;
+            try { d = File.ReadAllBytes(fbx); } catch { return null; }
+            var imagenes = new List<(byte[] datos, string ext)>();
+            void Buscar(byte[] firma, string ext)
+            {
+                for (int i = 5; i < d.Length - firma.Length; i++)
+                {
+                    bool ok = true;
+                    for (int k = 0; k < firma.Length; k++) if (d[i + k] != firma[k]) { ok = false; break; }
+                    if (!ok || d[i - 5] != (byte)'R') continue;
+                    int n = BitConverter.ToInt32(d, i - 4);
+                    if (n <= 0 || i + n > d.Length) continue;
+                    var b = new byte[n]; Buffer.BlockCopy(d, i, b, 0, n);
+                    imagenes.Add((b, ext)); i += n - 1;
+                }
+            }
+            Buscar(new byte[] { 0xFF, 0xD8, 0xFF }, "jpg");
+            Buscar(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }, "png");
+            if (imagenes.Count == 0) return null;
+
+            byte[] albedo = null, normal = null; string extA = "jpg", extN = "jpg";
+            foreach (var (datos, ext) in imagenes)
+            {
+                var t = new Texture2D(2, 2);
+                if (!t.LoadImage(datos)) { UnityEngine.Object.DestroyImmediate(t); continue; }
+                float r = 0, g = 0, bl = 0, mn = 1, mx = 0; int c = 0;
+                for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++)
+                    {
+                        var p = t.GetPixel(x * t.width / 16, y * t.height / 16);
+                        r += p.r; g += p.g; bl += p.b; c++;
+                        mn = Mathf.Min(mn, Mathf.Abs(p.r - p.g) + Mathf.Abs(p.g - p.b)); mx = Mathf.Max(mx, Mathf.Abs(p.r - p.g) + Mathf.Abs(p.g - p.b));
+                    }
+                r /= c; g /= c; bl /= c;
+                UnityEngine.Object.DestroyImmediate(t);
+                bool esNormal = bl > 0.8f && Mathf.Abs(r - 0.5f) < 0.15f && Mathf.Abs(g - 0.5f) < 0.15f;
+                bool gris = mx < 0.04f;
+                if (esNormal) { if (normal == null) { normal = datos; extN = ext; } }
+                else if (!gris && albedo == null) { albedo = datos; extA = ext; }
+            }
+            if (albedo == null) foreach (var (datos, ext) in imagenes) if (datos != normal) { albedo = datos; extA = ext; break; }
+            if (albedo == null) return null;
+
+            Directory.CreateDirectory(dir);
+            string rutaA = $"{dir}/color.{extA}", rutaN = $"{dir}/normal.{extN}";
+            File.WriteAllBytes(rutaA, albedo);
+            if (normal != null) File.WriteAllBytes(rutaN, normal);
+            AssetDatabase.ImportAsset(rutaA, ImportAssetOptions.ForceSynchronousImport);
+            if (normal != null) AssetDatabase.ImportAsset(rutaN, ImportAssetOptions.ForceSynchronousImport);
+            // Móvil: 1024 px bastan (2048 llenaban la memoria)
+            if (AssetImporter.GetAtPath(rutaA) is TextureImporter ia) { ia.maxTextureSize = 1024; ia.sRGBTexture = true; ia.SaveAndReimport(); }
+            if (normal != null && AssetImporter.GetAtPath(rutaN) is TextureImporter inn) { inn.textureType = TextureImporterType.NormalMap; inn.maxTextureSize = 1024; inn.SaveAndReimport(); }
+
+            var mat = new Material(Shader.Find("Standard")) { name = Path.GetFileName(carpeta) };
+            mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(rutaA);
+            mat.color = Color.white;
+            if (normal != null) { mat.SetTexture("_BumpMap", AssetDatabase.LoadAssetAtPath<Texture2D>(rutaN)); mat.EnableKeyword("_NORMALMAP"); mat.SetFloat("_BumpScale", 1f); }
+            mat.SetFloat("_Metallic", 0f); mat.SetFloat("_Glossiness", 0.2f);
+            mat.enableInstancing = true;
+            AssetDatabase.CreateAsset(mat, rutaMat);
+            Debug.Log($"[Forja3D] Material con textura para {Path.GetFileName(carpeta)} ({imagenes.Count} imágenes en el FBX{(normal != null ? ", con relieve" : "")})");
+            return mat;
         }
 
         public static Bounds Limites(GameObject g)
@@ -397,7 +471,10 @@ namespace Forja3D.EditorTools
                 if (nombres != null) clips[i].name = nombres[i];
                 var n = clips[i].name.ToLowerInvariant();
                 clips[i].loopTime = EnBucle.Any(k => n.Contains(k));
-                clips[i].lockRootRotation = clips[i].lockRootHeightY = clips[i].lockRootPositionXZ = !Forja3DImporter.EsTripo(m);
+                // Rotación y altura horneadas en la pose; el avance XZ NO (se extrae y se descarta): el movimiento
+                // lo da el CharacterController y el cuerpo no "vuelve al punto inicial" al acabar el clip
+                clips[i].lockRootRotation = clips[i].lockRootHeightY = !Forja3DImporter.EsTripo(m);
+                clips[i].lockRootPositionXZ = false;
                 clips[i].keepOriginalOrientation = clips[i].keepOriginalPositionY = clips[i].keepOriginalPositionXZ = true;
             }
             mi.clipAnimations = clips;
