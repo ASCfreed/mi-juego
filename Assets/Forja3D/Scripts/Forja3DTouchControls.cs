@@ -1,7 +1,7 @@
 // Forja3D — controles táctiles leyendo los dedos directamente (sin EventSystem).
 // Cada dedo recibe un papel al tocar la pantalla y lo conserva hasta soltarlo:
 //   · mitad izquierda  → joystick flotante (aparece donde pones el dedo)
-//   · botones          → SALTAR / ATACAR
+//   · botones          → ATACAR / CUBRIR (mantener) / ESQUIVAR / SALTAR / CORRER (alterna)
 //   · resto de la mitad derecha → girar la cámara
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,7 +27,13 @@ namespace Forja3D
         int dedoJoystick = -1;
         Vector2 origenJoystick;
         RectTransform raiz, fondo, palanca;
-        readonly List<(RectTransform rect, System.Action accion, Image img, Color color)> botones = new List<(RectTransform, System.Action, Image, Color)>();
+        class Boton
+        {
+            public RectTransform rect; public Image img; public Color color;
+            public System.Action alPulsar, alSoltar; public System.Func<bool> encendido; public int dedos;
+        }
+        readonly List<Boton> botones = new List<Boton>();
+        readonly Dictionary<int, Boton> botonDeDedo = new Dictionary<int, Boton>();
         Vector2 posReposo;
         Canvas canvas;
 
@@ -54,17 +60,51 @@ namespace Forja3D
             fondo.anchoredPosition = posReposo;
             palanca = Panel("Palanca", fondo, new Color(1, 1, 1, 0.45f), new Vector2(120, 120));
             palanca.anchorMin = palanca.anchorMax = new Vector2(0.5f, 0.5f);
+            fondo.GetComponent<Image>().sprite = Circulo(); palanca.GetComponent<Image>().sprite = Circulo();
 
-            Boton("ATACAR", new Vector2(-200, 230), 200, new Color(0.9f, 0.3f, 0.25f, 0.7f), Forja3DInput.PulsarAtaque);
-            Boton("SALTAR", new Vector2(-430, 130), 170, new Color(0.25f, 0.6f, 0.95f, 0.7f), Forja3DInput.PulsarSalto);
+            Forja3DInput.Reiniciar();
+            // Racimo de botones abajo a la derecha (unidades del canvas 1920x1080, ancla esquina inferior derecha)
+            CrearBoton("ATACAR", new Vector2(-220, 230), 230, new Color(0.85f, 0.22f, 0.18f, 0.72f), Forja3DInput.PulsarAtaque);
+            CrearBoton("CUBRIR", new Vector2(-500, 150), 175, new Color(0.85f, 0.7f, 0.25f, 0.65f),
+                () => Forja3DInput.CubrirTactil = true, () => Forja3DInput.CubrirTactil = false);
+            CrearBoton("ESQUIVAR", new Vector2(-230, 500), 170, new Color(0.3f, 0.75f, 0.55f, 0.65f), Forja3DInput.PulsarEsquiva);
+            CrearBoton("SALTAR", new Vector2(-480, 400), 140, new Color(0.25f, 0.55f, 0.95f, 0.6f), Forja3DInput.PulsarSalto);
+            CrearBoton("CORRER", new Vector2(-740, 120), 135, new Color(0.6f, 0.6f, 0.65f, 0.55f), Forja3DInput.AlternarCorrer, null, () => Forja3DInput.CorrerActivo);
         }
 
-        void Boton(string texto, Vector2 pos, float tam, Color color, System.Action accion)
+        void CrearBoton(string texto, Vector2 pos, float tam, Color color, System.Action alPulsar, System.Action alSoltar = null, System.Func<bool> encendido = null)
         {
             var r = Panel(texto, transform, color, new Vector2(tam, tam));
             r.anchorMin = r.anchorMax = new Vector2(1, 0); r.anchoredPosition = pos;
-            Forja3DGameManager.Texto(r, texto, 32, TextAnchor.MiddleCenter);
-            botones.Add((r, accion, r.GetComponent<Image>(), color));
+            var img = r.GetComponent<Image>(); img.sprite = Circulo();
+            Forja3DGameManager.Texto(r, texto, Mathf.RoundToInt(Mathf.Clamp(tam * 0.16f, 22, 34)), TextAnchor.MiddleCenter);
+            botones.Add(new Boton { rect = r, img = img, color = color, alPulsar = alPulsar, alSoltar = alSoltar, encendido = encendido });
+        }
+
+        // Sprite circular generado (botones redondos sin necesidad de imágenes)
+        static Sprite circulo;
+        static Sprite Circulo()
+        {
+            if (circulo) return circulo;
+            const int n = 128; var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+            for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
+                {
+                    float d = Vector2.Distance(new Vector2(x, y), new Vector2(n / 2f - 0.5f, n / 2f - 0.5f)) / (n / 2f);
+                    float a = Mathf.Clamp01((1f - d) * 24f);
+                    float borde = Mathf.Clamp01(1f - Mathf.Abs(d - 0.93f) * 30f);
+                    tex.SetPixel(x, y, new Color(1, 1, 1, a * (0.75f + 0.25f * borde)));
+                }
+            tex.Apply();
+            return circulo = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f));
+        }
+
+        void LateUpdate()
+        {
+            foreach (var b in botones)
+            {
+                bool on = b.dedos > 0 || (b.encendido != null && b.encendido());
+                b.img.color = on ? Color.Lerp(b.color, Color.white, 0.45f) : b.color;
+            }
         }
 
         static RectTransform Panel(string nombre, Transform padre, Color color, Vector2 tam)
@@ -97,17 +137,18 @@ namespace Forja3D
                 }
             }
             // Seguridad: si se perdió algún dedo, suelta todo
-            if (Input.touchCount == 0 && (papeles.Count > 0 || dedoJoystick >= 0)) { papeles.Clear(); SoltarJoystick(); }
+            if (Input.touchCount == 0 && (papeles.Count > 0 || dedoJoystick >= 0)) { papeles.Clear(); SoltarJoystick(); SoltarBotones(); }
         }
 
         void Empezar(Touch t)
         {
             foreach (var b in botones)
-                if (RectTransformUtility.RectangleContainsScreenPoint(b.rect, t.position, null))
+                if (Dentro(b.rect, t.position))
                 {
                     papeles[t.fingerId] = Papel.Boton;
-                    b.accion();
-                    b.img.color = Color.Lerp(b.color, Color.white, 0.5f);
+                    botonDeDedo[t.fingerId] = b;
+                    b.dedos++;
+                    b.alPulsar?.Invoke();
                     return;
                 }
             if (t.position.x < Screen.width * 0.45f && dedoJoystick < 0)
@@ -143,10 +184,27 @@ namespace Forja3D
 
         void Terminar(Touch t)
         {
-            if (papeles.TryGetValue(t.fingerId, out var papel) && papel == Papel.Boton)
-                foreach (var b in botones) b.img.color = b.color;
+            if (botonDeDedo.TryGetValue(t.fingerId, out var b))
+            {
+                b.dedos = Mathf.Max(0, b.dedos - 1);
+                if (b.dedos == 0) b.alSoltar?.Invoke();
+                botonDeDedo.Remove(t.fingerId);
+            }
             papeles.Remove(t.fingerId);
             if (t.fingerId == dedoJoystick) SoltarJoystick();
+        }
+
+        // Área de toque circular y un 15 % más grande que el dibujo (más fácil de acertar con el pulgar)
+        static bool Dentro(RectTransform r, Vector2 pantalla)
+        {
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(r, pantalla, null, out var p)) return false;
+            return p.magnitude <= r.rect.width * 0.5f * 1.15f;
+        }
+
+        void SoltarBotones()
+        {
+            foreach (var b in botones) { if (b.dedos > 0) { b.dedos = 0; b.alSoltar?.Invoke(); } }
+            botonDeDedo.Clear();
         }
 
         void SoltarJoystick()
@@ -157,6 +215,6 @@ namespace Forja3D
             if (fondo) { fondo.anchoredPosition = posReposo; fondo.GetComponent<Image>().color = new Color(1, 1, 1, 0.15f); }
         }
 
-        void OnDisable() { Forja3DInput.JoystickTactil = Vector2.zero; }
+        void OnDisable() { Forja3DInput.JoystickTactil = Vector2.zero; Forja3DInput.CubrirTactil = false; }
     }
 }

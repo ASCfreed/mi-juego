@@ -24,7 +24,8 @@
       "color": "",
       "nombre": "",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "J",
@@ -35,7 +36,8 @@
       "color": "",
       "nombre": "La Muerte",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "K",
@@ -46,7 +48,8 @@
       "color": "",
       "nombre": "Carón",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "B",
@@ -57,7 +60,8 @@
       "color": "",
       "nombre": "",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "V",
@@ -77,13 +81,14 @@
           "quien": "Virgilio",
           "texto": "Hemos llegado al lugar donde verás a la gente dolorosa que ha perdido el bien del intelecto."
         }
-      ]
+      ],
+      "voz": ""
     }
   ],
   "jugador": {
     "modelo": "dante",
     "vida": 6,
-    "arma": ""
+    "arma": "espada"
   },
   "intro": [
     {
@@ -126,5 +131,6 @@
   "cielo": "#2a1d17",
   "niebla": true,
   "altura_muros": 5,
-  "color_muros": "#2b2522"
+  "color_muros": "#2b2522",
+  "ambiente": "infierno"
 }

@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; }
     [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; }
     [Serializable]
     public class JuegoDef
@@ -37,6 +37,7 @@ namespace Forja3D.EditorTools
         public bool niebla;
         public float altura_muros = 3f;
         public string color_muros = "#8c8478";
+        public string ambiente = "infierno";
         public Linea[] intro;
         public Linea[] salida;
     }
@@ -121,7 +122,13 @@ namespace Forja3D.EditorTools
             var escena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             float c = Mathf.Max(1f, n.celda);
             int filas = n.mapa.Length, cols = n.mapa.Max(f => f.Length);
-            Vector3 Pos(int f, int col) => new Vector3(col * c, 0, (filas - 1 - f) * c);
+            Terrain terreno = null; // Pos() se apoya en la altura real del terreno en cuanto existe
+            Vector3 Pos(int f, int col)
+            {
+                var p0 = new Vector3(col * c, 0, (filas - 1 - f) * c);
+                if (terreno) p0.y = terreno.SampleHeight(p0) + terreno.transform.position.y;
+                return p0;
+            }
 
             // Ambiente
             var luz = new GameObject("Sol").AddComponent<Light>();
@@ -135,25 +142,53 @@ namespace Forja3D.EditorTools
             RenderSettings.fog = n.niebla; RenderSettings.fogColor = cielo; RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogStartDistance = 15; RenderSettings.fogEndDistance = 60;
 
+            // Efectos de combate y sonido
+            new GameObject("Forja3DFX").AddComponent<Forja3DFX>().matParticula = MatParticula();
+            var audio = new GameObject("Audio").AddComponent<Forja3DAudio>();
+            audio.ambiente = "ambiente_" + (string.IsNullOrEmpty(n.ambiente) ? "infierno" : n.ambiente);
+
+            // Celdas de muro: el relieve del terreno se levanta ahí (acantilados en vez de cubos)
+            var esMuro = new bool[filas, cols];
+            for (int f = 0; f < filas; f++) for (int col = 0; col < cols; col++) esMuro[f, col] = Tipo(n, leyenda, f, col) == "muro";
+
             var nivel = new GameObject("Nivel");
-            CrearTerreno(n, id, filas, cols, c, nivel.transform);
+            terreno = CrearTerreno(n, id, filas, cols, c, esMuro, nivel.transform);
+            var rnd = new System.Random((n.terreno?.semilla ?? 1) * 7919 + id.GetHashCode());
+            var rocas = MallasRoca(id, 6, n.terreno?.semilla ?? 1);
+            var matRoca = MatRoca(id, Hex(n.color_muros, new Color(0.55f, 0.52f, 0.47f)));
 
             // Muros: une celdas seguidas de cada fila en un solo bloque
-            var matMuro = Mat("muro_" + id, Hex(n.color_muros, new Color(0.55f, 0.52f, 0.47f)));
             for (int f = 0; f < filas; f++)
                 for (int col = 0; col < cols; col++)
                 {
                     if (Tipo(n, leyenda, f, col) != "muro") continue;
                     int fin = col;
                     while (fin + 1 < cols && Tipo(n, leyenda, f, fin + 1) == "muro") fin++;
-                    var muro = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    muro.name = "Muro"; muro.transform.SetParent(nivel.transform);
-                    muro.transform.position = (Pos(f, col) + Pos(f, fin)) / 2f + Vector3.up * n.altura_muros / 2f;
-                    muro.transform.localScale = new Vector3((fin - col + 1) * c, n.altura_muros, c);
-                    muro.GetComponent<Renderer>().sharedMaterial = matMuro;
-                    GameObjectUtility.SetStaticEditorFlags(muro, StaticEditorFlags.BatchingStatic);
+                    // Colisión invisible (el aspecto lo dan el relieve del terreno y las rocas)
+                    var muro = new GameObject("MuroColision");
+                    muro.transform.SetParent(nivel.transform);
+                    float altoCol = n.altura_muros + 8f;
+                    var centro = (Pos(f, col) + Pos(f, fin)) / 2f; centro.y = 0;
+                    muro.transform.position = centro + Vector3.up * (altoCol / 2f - 1f);
+                    muro.AddComponent<BoxCollider>().size = new Vector3((fin - col + 1) * c, altoCol, c);
+                    GameObjectUtility.SetStaticEditorFlags(muro, StaticEditorFlags.NavigationStatic);
                     col = fin;
                 }
+
+            // Rocas a lo largo de los muros: rompen la silueta del relieve
+            var grupoRocas = new GameObject("RocasMuro").transform; grupoRocas.SetParent(nivel.transform);
+            for (int f = 0; f < filas; f++)
+                for (int col = 0; col < cols; col++)
+                {
+                    if (!esMuro[f, col] || rnd.NextDouble() > 0.7) continue;
+                    var p = Pos(f, col) + new Vector3((float)(rnd.NextDouble() - 0.5) * c * 0.6f, 0, (float)(rnd.NextDouble() - 0.5) * c * 0.6f);
+                    p.y = terreno.SampleHeight(p) - 0.4f;
+                    float tam = c * (0.55f + (float)rnd.NextDouble() * 0.7f);
+                    Roca(rocas[rnd.Next(rocas.Length)], matRoca, p, new Vector3(tam, tam * (0.8f + (float)rnd.NextDouble() * 1.1f), tam), rnd, grupoRocas, false);
+                }
+
+            // Paisaje fuera de la zona de juego: árboles muertos y peñascos en las colinas
+            Paisaje(n, id, filas, cols, c, terreno, rocas, matRoca, rnd, nivel.transform);
 
             // Decoración (obstáculos para el NavMesh)
             for (int f = 0; f < filas; f++)
@@ -161,7 +196,7 @@ namespace Forja3D.EditorTools
                 {
                     var s = Sim(n, leyenda, f, col);
                     if (s == null || (s.tipo != "arbol" && s.tipo != "roca" && s.tipo != "decoracion")) continue;
-                    var d = Decoracion(s, c, id);
+                    var d = Decoracion(s, c, id, rocas, matRoca, rnd);
                     d.transform.SetParent(nivel.transform);
                     d.transform.position = Pos(f, col);
                     d.transform.rotation = Quaternion.Euler(0, (f * 73 + col * 37) % 360, 0);
@@ -231,11 +266,11 @@ namespace Forja3D.EditorTools
         static string Tipo(Nivel n, Dictionary<char, Simbolo> l, int f, int col) => Sim(n, l, f, col)?.tipo;
 
         // ---------- Terreno: plano en la zona jugable, colinas alrededor ----------
-        static void CrearTerreno(Nivel n, string id, int filas, int cols, float c, Transform padre)
+        static Terrain CrearTerreno(Nivel n, string id, int filas, int cols, float c, bool[,] esMuro, Transform padre)
         {
-            float margen = 30f, alturaMax = 18f;
+            float margen = 30f, alturaMax = 24f;
             float ancho = cols * c + margen * 2, largo = filas * c + margen * 2;
-            var td = new TerrainData { heightmapResolution = 257 };
+            var td = new TerrainData { heightmapResolution = 513, alphamapResolution = 512 };
             td.size = new Vector3(ancho, alturaMax, largo);
             int res = td.heightmapResolution;
             var h = new float[res, res];
@@ -251,33 +286,299 @@ namespace Forja3D.EditorTools
                     float d = Mathf.Sqrt(dx * dx + dz * dz);
                     float k = Mathf.Clamp01((d - 1f) / (margen * 0.6f));
                     float ruido = Mathf.PerlinNoise(ox + wx * 0.05f, oz + wz * 0.05f);
-                    h[z, x] = k * k * colinas * (0.4f + 0.6f * ruido);
+                    float detalle = Mathf.PerlinNoise(ox + wx * 0.23f, oz + wz * 0.23f);
+                    // Colinas fuera de la zona de juego (más altas que antes: horizonte montañoso)
+                    float alto = k * k * (0.25f + 0.75f * colinas) * (0.35f + 0.5f * ruido + 0.15f * detalle) * alturaMax;
+                    // Suelo jugable con ondulación suave (no afecta a la navegación)
+                    if (d <= 0) alto = (detalle - 0.5f) * 0.25f + 0.12f;
+                    // Crestas rocosas sobre las celdas de muro
+                    float dm = DistanciaMuro(wx, wz, c, filas, cols, esMuro);
+                    if (dm < c * 0.45f)
+                    {
+                        float caida = Mathf.SmoothStep(0f, 1f, 1f - dm / (c * 0.45f));
+                        float cresta = n.altura_muros * (1.05f + 0.6f * Mathf.PerlinNoise(ox + wx * 0.31f, oz + wz * 0.31f)) + detalle * 0.8f;
+                        alto = Mathf.Max(alto, cresta * caida);
+                    }
+                    h[z, x] = Mathf.Clamp01(alto / alturaMax);
                 }
             td.SetHeights(0, 0, h);
 
             var (col1, col2) = (n.terreno?.tipo ?? "pasto") switch
             {
-                "arena" => (new Color(0.86f, 0.78f, 0.55f), new Color(0.78f, 0.68f, 0.45f)),
-                "nieve" => (new Color(0.93f, 0.95f, 0.98f), new Color(0.82f, 0.86f, 0.92f)),
-                "piedra" => (new Color(0.5f, 0.5f, 0.5f), new Color(0.4f, 0.4f, 0.42f)),
-                "lava" => (new Color(0.25f, 0.2f, 0.2f), new Color(0.45f, 0.15f, 0.08f)),
-                _ => (new Color(0.36f, 0.6f, 0.28f), new Color(0.28f, 0.5f, 0.22f)),
+                "arena" => (new Color(0.62f, 0.52f, 0.36f), new Color(0.48f, 0.38f, 0.26f)),
+                "nieve" => (new Color(0.86f, 0.89f, 0.93f), new Color(0.7f, 0.75f, 0.82f)),
+                "piedra" => (new Color(0.33f, 0.3f, 0.28f), new Color(0.22f, 0.2f, 0.19f)),
+                "lava" => (new Color(0.16f, 0.12f, 0.11f), new Color(0.38f, 0.12f, 0.05f)),
+                _ => (new Color(0.2f, 0.26f, 0.15f), new Color(0.13f, 0.16f, 0.1f)),   // hierba seca y oscura
             };
-            var tex = new Texture2D(64, 64, TextureFormat.RGBA32, true);
-            for (int y = 0; y < 64; y++) for (int x = 0; x < 64; x++)
-                    tex.SetPixel(x, y, UnityEngine.Color.Lerp(col1, col2, Mathf.PerlinNoise(x * 0.15f, y * 0.15f)));
-            tex.Apply();
-            var rutaTex = $"{RutaGenerado}/Datos/suelo_{id}.png";
-            File.WriteAllBytes(rutaTex, tex.EncodeToPNG());
-            AssetDatabase.ImportAsset(rutaTex);
-            var capa = new TerrainLayer { diffuseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(rutaTex), tileSize = new Vector2(6, 6) };
-            AssetDatabase.CreateAsset(capa, $"{RutaGenerado}/Datos/capa_{id}.terrainlayer");
-            td.terrainLayers = new[] { capa };
+            var colRoca = Hex(n.color_muros, new Color(0.4f, 0.37f, 0.34f));
+            var capaSuelo = Capa(id, "suelo", TexturaRuido(col1, col2, 3, 1.4f, false), 7f);
+            var capaSuelo2 = Capa(id, "suelo2", TexturaRuido(col2 * 0.9f, Color.Lerp(col2, new Color(0.25f, 0.2f, 0.16f), 0.6f), 11, 2.2f, false), 5f);
+            var capaRoca = Capa(id, "roca", TexturaRuido(colRoca * 1.1f, colRoca * 0.55f, 23, 1.8f, true), 4f);
+            td.terrainLayers = new[] { capaSuelo, capaSuelo2, capaRoca };
+
+            // Pinta: roca en pendientes y crestas, manchas de tierra en el suelo
+            int ar = td.alphamapResolution;
+            var alfa = new float[ar, ar, 3];
+            for (int z = 0; z < ar; z++)
+                for (int x = 0; x < ar; x++)
+                {
+                    float nx = x / (float)(ar - 1), nz = z / (float)(ar - 1);
+                    float pend = td.GetSteepness(nx, nz);
+                    float alt = td.GetInterpolatedHeight(nx, nz);
+                    float roca = Mathf.Clamp01(Mathf.Max((pend - 22f) / 18f, (alt - 1.2f) / 1.5f));
+                    float mancha = Mathf.Clamp01((Mathf.PerlinNoise(ox + nx * 18f, oz + nz * 18f) - 0.45f) * 3f);
+                    alfa[z, x, 2] = roca;
+                    alfa[z, x, 1] = (1 - roca) * mancha;
+                    alfa[z, x, 0] = (1 - roca) * (1 - mancha);
+                }
+            td.SetAlphamaps(0, 0, alfa);
             AssetDatabase.CreateAsset(td, $"{RutaGenerado}/Datos/terreno_{id}.asset");
 
             var t = Terrain.CreateTerrainGameObject(td);
             t.name = "Terreno"; t.transform.SetParent(padre);
             t.transform.position = new Vector3(-margen - c / 2f, 0, -margen - c / 2f);
+            var ter = t.GetComponent<Terrain>();
+            ter.heightmapPixelError = 4; ter.basemapDistance = 60; ter.drawInstanced = true;
+            GameObjectUtility.SetStaticEditorFlags(t, StaticEditorFlags.NavigationStatic);
+            return ter;
+        }
+
+        // Distancia (en metros) desde un punto a la celda de muro más cercana (0 si está dentro)
+        static float DistanciaMuro(float wx, float wz, float c, int filas, int cols, bool[,] esMuro)
+        {
+            int cc = Mathf.RoundToInt(wx / c), fz = Mathf.RoundToInt(wz / c);
+            float mejor = float.MaxValue;
+            for (int dz = -1; dz <= 1; dz++)
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int col = cc + dx, fila = filas - 1 - (fz + dz);
+                    if (col < 0 || fila < 0 || col >= cols || fila >= filas || !esMuro[fila, col]) continue;
+                    float cx = col * c, cz = (fz + dz) * c;
+                    float ex = Mathf.Max(0, Mathf.Abs(wx - cx) - c / 2f), ez = Mathf.Max(0, Mathf.Abs(wz - cz) - c / 2f);
+                    mejor = Mathf.Min(mejor, Mathf.Sqrt(ex * ex + ez * ez));
+                }
+            return mejor;
+        }
+
+        static TerrainLayer Capa(string id, string nombre, Texture2D tex, float tile)
+        {
+            var ruta = $"{RutaGenerado}/Datos/{nombre}_{id}.png";
+            File.WriteAllBytes(ruta, tex.EncodeToPNG());
+            AssetDatabase.ImportAsset(ruta);
+            var capa = new TerrainLayer { diffuseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(ruta), tileSize = new Vector2(tile, tile), smoothness = 0.05f };
+            AssetDatabase.CreateAsset(capa, $"{RutaGenerado}/Datos/capa_{nombre}_{id}.terrainlayer");
+            return capa;
+        }
+
+        // Textura de ruido fractal que se repite sin costuras (suelo, tierra, roca con grietas)
+        static Texture2D TexturaRuido(Color a, Color b, int semilla, float contraste, bool grietas)
+        {
+            const int N = 256;
+            var tex = new Texture2D(N, N, TextureFormat.RGBA32, true);
+            var px = new Color[N * N];
+            float Ruido(float x, float y, float f)
+            {
+                // Ruido periódico: mezcla de 4 muestras para que el borde case con el lado opuesto
+                float u = x / N, v = y / N;
+                float n00 = Mathf.PerlinNoise(semilla + x * f, semilla + y * f), n10 = Mathf.PerlinNoise(semilla + (x - N) * f, semilla + y * f);
+                float n01 = Mathf.PerlinNoise(semilla + x * f, semilla + (y - N) * f), n11 = Mathf.PerlinNoise(semilla + (x - N) * f, semilla + (y - N) * f);
+                return Mathf.Lerp(Mathf.Lerp(n00, n10, u), Mathf.Lerp(n01, n11, u), v);
+            }
+            var r = new System.Random(semilla);
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    float v = Ruido(x, y, 0.02f) * 0.5f + Ruido(x, y, 0.06f) * 0.3f + Ruido(x, y, 0.18f) * 0.2f;
+                    v = Mathf.Clamp01((v - 0.5f) * contraste + 0.5f);
+                    float grano = (float)r.NextDouble() * 0.12f - 0.06f;
+                    var col = Color.Lerp(b, a, v) * (1f + grano);
+                    if (grietas)
+                    {
+                        float g = Mathf.Abs(Ruido(x, y, 0.045f) - 0.5f);
+                        if (g < 0.025f) col *= 0.45f + g * 12f;
+                    }
+                    col.a = 1; px[y * N + x] = col;
+                }
+            tex.SetPixels(px); tex.Apply();
+            return tex;
+        }
+
+        // ---------- Rocas procedurales (malla de icosfera deformada, facetada) ----------
+        static Mesh[] MallasRoca(string id, int cuantas, int semilla)
+        {
+            var lista = new Mesh[cuantas];
+            for (int i = 0; i < cuantas; i++)
+            {
+                var m = Icosfera(2);
+                var v = m.vertices;
+                float s0 = semilla * 13.1f + i * 71.7f;
+                for (int k = 0; k < v.Length; k++)
+                {
+                    var p = v[k];
+                    float n1 = Ruido3(p * 1.3f, s0), n2 = Ruido3(p * 3.2f, s0 + 50);
+                    p *= 1f + (n1 - 0.5f) * 0.7f + (n2 - 0.5f) * 0.22f;
+                    p.y = p.y < -0.25f ? -0.25f + (p.y + 0.25f) * 0.2f : p.y; // base plana
+                    v[k] = new Vector3(p.x, p.y * 0.75f, p.z) * 0.5f;
+                }
+                m.vertices = v;
+                Facetar(m);
+                m.name = $"roca_{id}_{i}";
+                AssetDatabase.CreateAsset(m, $"{RutaGenerado}/Datos/roca_{id}_{i}.asset");
+                lista[i] = m;
+            }
+            return lista;
+        }
+
+        static float Ruido3(Vector3 p, float s) =>
+            (Mathf.PerlinNoise(p.x + s, p.y + s * 0.7f) + Mathf.PerlinNoise(p.y + s * 1.3f, p.z + s) + Mathf.PerlinNoise(p.z + s * 0.4f, p.x + s * 1.9f)) / 3f;
+
+        static Mesh Icosfera(int subdiv)
+        {
+            float t = (1f + Mathf.Sqrt(5f)) / 2f;
+            var verts = new List<Vector3> {
+                new Vector3(-1, t, 0), new Vector3(1, t, 0), new Vector3(-1, -t, 0), new Vector3(1, -t, 0),
+                new Vector3(0, -1, t), new Vector3(0, 1, t), new Vector3(0, -1, -t), new Vector3(0, 1, -t),
+                new Vector3(t, 0, -1), new Vector3(t, 0, 1), new Vector3(-t, 0, -1), new Vector3(-t, 0, 1) };
+            for (int i = 0; i < verts.Count; i++) verts[i] = verts[i].normalized;
+            var tris = new List<int> { 0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11, 1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8,
+                3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9, 4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1 };
+            for (int s = 0; s < subdiv; s++)
+            {
+                var cache = new Dictionary<long, int>();
+                int Medio(int a, int b)
+                {
+                    long k = a < b ? ((long)a << 32) + b : ((long)b << 32) + a;
+                    if (cache.TryGetValue(k, out var i)) return i;
+                    verts.Add(((verts[a] + verts[b]) / 2f).normalized);
+                    return cache[k] = verts.Count - 1;
+                }
+                var nuevos = new List<int>();
+                for (int i = 0; i < tris.Count; i += 3)
+                {
+                    int a = tris[i], b = tris[i + 1], c = tris[i + 2];
+                    int ab = Medio(a, b), bc = Medio(b, c), ca = Medio(c, a);
+                    nuevos.AddRange(new[] { a, ab, ca, b, bc, ab, c, ca, bc, ab, bc, ca });
+                }
+                tris = nuevos;
+            }
+            var m = new Mesh(); m.SetVertices(verts); m.SetTriangles(tris, 0);
+            return m;
+        }
+
+        // Duplica vértices por triángulo (aspecto tallado) y proyecta UV según la cara
+        static void Facetar(Mesh m)
+        {
+            var v = m.vertices; var t = m.triangles;
+            var nv = new Vector3[t.Length]; var uv = new Vector2[t.Length]; var nt = new int[t.Length];
+            for (int i = 0; i < t.Length; i += 3)
+            {
+                Vector3 a = v[t[i]], b = v[t[i + 1]], c = v[t[i + 2]];
+                var n = Vector3.Cross(b - a, c - a).normalized;
+                var an = new Vector3(Mathf.Abs(n.x), Mathf.Abs(n.y), Mathf.Abs(n.z));
+                Vector2 P(Vector3 p) => an.y >= an.x && an.y >= an.z ? new Vector2(p.x, p.z) : an.x >= an.z ? new Vector2(p.z, p.y) : new Vector2(p.x, p.y);
+                for (int k = 0; k < 3; k++) { nv[i + k] = v[t[i + k]]; uv[i + k] = P(v[t[i + k]]) * 1.5f; nt[i + k] = i + k; }
+            }
+            m.Clear(); m.vertices = nv; m.uv = uv; m.triangles = nt;
+            m.RecalculateNormals(); m.RecalculateBounds(); m.RecalculateTangents();
+        }
+
+        static Material MatRoca(string id, Color color)
+        {
+            var ruta = $"{RutaGenerado}/Datos/tex_roca_{id}.png";
+            File.WriteAllBytes(ruta, TexturaRuido(color * 1.15f, color * 0.5f, 31, 2f, true).EncodeToPNG());
+            AssetDatabase.ImportAsset(ruta);
+            var m = new Material(Shader.Find("Standard")) { mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(ruta) };
+            m.SetFloat("_Glossiness", 0.08f);
+            m.enableInstancing = true;
+            AssetDatabase.CreateAsset(m, $"{RutaGenerado}/Datos/mat_roca_{id}.mat");
+            return m;
+        }
+
+        static GameObject Roca(Mesh malla, Material mat, Vector3 pos, Vector3 escala, System.Random rnd, Transform padre, bool colision)
+        {
+            var g = new GameObject("Roca", typeof(MeshFilter), typeof(MeshRenderer));
+            g.GetComponent<MeshFilter>().sharedMesh = malla;
+            g.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            g.transform.SetParent(padre);
+            g.transform.position = pos;
+            g.transform.rotation = Quaternion.Euler((float)rnd.NextDouble() * 20 - 10, (float)rnd.NextDouble() * 360, (float)rnd.NextDouble() * 20 - 10);
+            g.transform.localScale = escala;
+            if (colision) g.AddComponent<MeshCollider>().sharedMesh = malla;
+            GameObjectUtility.SetStaticEditorFlags(g, StaticEditorFlags.BatchingStatic);
+            return g;
+        }
+
+        // Árbol muerto procedural (tronco y ramas retorcidas)
+        static GameObject ArbolMuerto(System.Random rnd, Material mat, float altura)
+        {
+            var raiz = new GameObject("ArbolMuerto");
+            void Rama(Transform padre, Vector3 desde, Vector3 dir, float largo, float grosor, int nivel)
+            {
+                var r = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                UnityEngine.Object.DestroyImmediate(r.GetComponent<Collider>());
+                r.GetComponent<Renderer>().sharedMaterial = mat;
+                r.transform.SetParent(padre, false);
+                r.transform.position = desde + dir * largo / 2f;
+                r.transform.up = dir;
+                r.transform.localScale = new Vector3(grosor, largo / 2f, grosor);
+                if (nivel <= 0) return;
+                var fin = desde + dir * largo;
+                int hijos = nivel == 3 ? 3 : 2;
+                for (int i = 0; i < hijos; i++)
+                {
+                    var giro = Quaternion.Euler((float)rnd.NextDouble() * 50 + 15, i * (360f / hijos) + (float)rnd.NextDouble() * 60, 0);
+                    var nd = (giro * dir + Vector3.up * 0.15f).normalized;
+                    var inicio = Vector3.Lerp(desde, fin, 0.65f + (float)rnd.NextDouble() * 0.35f);
+                    Rama(raiz.transform, inicio, nd, largo * (0.55f + (float)rnd.NextDouble() * 0.15f), grosor * 0.55f, nivel - 1);
+                }
+            }
+            var inclinado = Quaternion.Euler((float)rnd.NextDouble() * 10 - 5, 0, (float)rnd.NextDouble() * 10 - 5) * Vector3.up;
+            Rama(raiz.transform, Vector3.zero, inclinado, altura * 0.5f, altura * 0.07f, 3);
+            return raiz;
+        }
+
+        static void Paisaje(Nivel n, string id, int filas, int cols, float c, Terrain ter, Mesh[] rocas, Material matRoca, System.Random rnd, Transform padre)
+        {
+            var grupo = new GameObject("Paisaje").transform; grupo.SetParent(padre);
+            var matTronco = Mat("tronco_muerto", new Color(0.12f, 0.1f, 0.09f));
+            bool hayArbol = Forja3DImporter.RutaPrefab("arbol");
+            int total = Mathf.Clamp((filas + cols) * 3, 40, 140);
+            float ancho = cols * c, largo = filas * c;
+            for (int i = 0; i < total; i++)
+            {
+                // Punto en un anillo de 3 a 26 m fuera de la zona de juego
+                float lado = (float)rnd.NextDouble() * 4f, dist = 3f + (float)Math.Pow(rnd.NextDouble(), 1.6) * 23f;
+                float t = (float)rnd.NextDouble();
+                Vector3 p = lado < 1 ? new Vector3(t * ancho, 0, -dist) : lado < 2 ? new Vector3(t * ancho, 0, largo + dist)
+                          : lado < 3 ? new Vector3(-dist, 0, t * largo) : new Vector3(ancho + dist, 0, t * largo);
+                p -= new Vector3(c / 2f, 0, c / 2f);
+                p.y = ter.SampleHeight(p) + ter.transform.position.y;
+                if (rnd.NextDouble() < 0.45)
+                {
+                    GameObject a = hayArbol ? InstanciarModelo("arbol") : ArbolMuerto(rnd, matTronco, 3.5f + (float)rnd.NextDouble() * 3f);
+                    foreach (var col in a.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(col);
+                    if (hayArbol) { var b = Forja3DImporter.Limites(a); a.transform.localScale *= (3.5f + (float)rnd.NextDouble() * 3f) / Mathf.Max(0.01f, b.size.y); }
+                    a.transform.SetParent(grupo); a.transform.position = p - Vector3.up * 0.1f;
+                    a.transform.rotation = Quaternion.Euler(0, (float)rnd.NextDouble() * 360, 0);
+                    GameObjectUtility.SetStaticEditorFlags(a, StaticEditorFlags.BatchingStatic);
+                }
+                else
+                {
+                    float tam = 1.5f + (float)rnd.NextDouble() * 4.5f;
+                    Roca(rocas[rnd.Next(rocas.Length)], matRoca, p - Vector3.up * tam * 0.2f, new Vector3(tam, tam * (0.6f + (float)rnd.NextDouble()), tam), rnd, grupo, false);
+                }
+            }
+        }
+
+        static Material MatParticula()
+        {
+            var m = AssetDatabase.GetBuiltinExtraResource<Material>("Default-ParticleSystem.mat");
+            if (m) return m;
+            var sh = Shader.Find("Particles/Standard Unlit") ?? Shader.Find("Legacy Shaders/Particles/Alpha Blended");
+            m = new Material(sh);
+            AssetDatabase.CreateAsset(m, $"{RutaGenerado}/Datos/mat_particula.mat");
+            return m;
         }
 
         // ---------- Entidades ----------
@@ -313,7 +614,7 @@ namespace Forja3D.EditorTools
             if (!cc) { cc = g.AddComponent<CharacterController>(); cc.height = 2f; cc.radius = 0.4f; cc.center = Vector3.up; }
             var h = g.AddComponent<Forja3DHealth>(); h.esJugador = true; h.vidaMaxima = Mathf.Max(1, n.jugador?.vida ?? 5);
             g.AddComponent<Forja3DPlayerController>().crearCamaraAutomatica = false;
-            Arma(g, n.jugador?.arma);
+            Arma(g, !string.IsNullOrEmpty(n.jugador?.arma) ? n.jugador.arma : Forja3DImporter.RutaPrefab("espada") ? "espada" : null);
         }
 
         // Coloca un arma generada (p. ej. "guadana") en la mano derecha de un humanoide
@@ -347,11 +648,15 @@ namespace Forja3D.EditorTools
             var ag = g.AddComponent<NavMeshAgent>(); ag.height = alto; ag.radius = radio;
             var h = g.AddComponent<Forja3DHealth>(); h.vidaMaxima = Mathf.Max(1, s.vida);
             var e = g.AddComponent<Forja3DEnemy>();
+            e.nombre = s.nombre ?? "";
+            string m = (s.modelo ?? "").ToLowerInvariant();
+            bool fiera = m.Contains("pantera") || m.Contains("leon") || m.Contains("lob") || m.Contains("perro") || m.Contains("cerbero");
+            e.voz = !string.IsNullOrEmpty(s.voz) ? s.voz : fiera ? "fiera" : jefe ? "jefe" : "condenado";
+            if (fiera) { e.velocidad = 3.6f; e.radioAtaque = 1.5f * esc; e.probImparable = 0.3f; }
             if (jefe)
             {
-                h.invulnerable = 0.35f;
-                e.esJefe = true; e.danio = 2; e.velocidad = 2.2f; e.enfriamiento = 1.8f;
-                e.radioDeteccion = 14f; e.radioAtaque = 1.6f * esc; e.radioPatrulla = 2f;
+                e.esJefe = true; e.danio = 2; e.velocidad = fiera ? 3.2f : 2.4f; e.enfriamiento = 1.6f;
+                e.radioDeteccion = 14f; e.radioAtaque = 1.5f * esc; e.radioPatrulla = 2f; e.probImparable = 0.25f;
             }
         }
 
@@ -398,9 +703,11 @@ namespace Forja3D.EditorTools
             g.AddComponent<Forja3DGoal>();
         }
 
-        static GameObject Decoracion(Simbolo s, float c, string id)
+        static GameObject Decoracion(Simbolo s, float c, string id, Mesh[] rocas, Material matRoca, System.Random rnd)
         {
-            var g = InstanciarModelo(s.modelo);
+            // T y R usan los modelos "arbol" y "roca" del proyecto si existen
+            var modelo = !string.IsNullOrEmpty(s.modelo) ? s.modelo : s.tipo == "arbol" && Forja3DImporter.RutaPrefab("arbol") ? "arbol" : s.tipo == "roca" && Forja3DImporter.RutaPrefab("roca") ? "roca" : null;
+            var g = InstanciarModelo(modelo);
             if (g)
             {
                 // Ajusta el modelo generado al tamaño de la celda
@@ -414,19 +721,14 @@ namespace Forja3D.EditorTools
             g = new GameObject(s.tipo == "roca" ? "Roca" : "Arbol");
             if (s.tipo == "roca")
             {
-                var r = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                r.transform.SetParent(g.transform); r.transform.localPosition = Vector3.up * 0.4f; r.transform.localScale = new Vector3(c * 0.8f, c * 0.5f, c * 0.7f);
-                r.GetComponent<Renderer>().sharedMaterial = Mat("roca", Hex(s.color, new Color(0.5f, 0.5f, 0.52f)));
+                float tam = c * 0.85f;
+                Roca(rocas[rnd.Next(rocas.Length)], matRoca, Vector3.up * -0.15f, new Vector3(tam, tam * 0.9f, tam), rnd, g.transform, true);
             }
             else
             {
-                var tronco = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                tronco.transform.SetParent(g.transform); tronco.transform.localPosition = Vector3.up * 1f; tronco.transform.localScale = new Vector3(0.4f, 1f, 0.4f);
-                tronco.GetComponent<Renderer>().sharedMaterial = Mat("tronco", new Color(0.45f, 0.3f, 0.18f));
-                var copa = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                UnityEngine.Object.DestroyImmediate(copa.GetComponent<Collider>());
-                copa.transform.SetParent(g.transform); copa.transform.localPosition = Vector3.up * 2.6f; copa.transform.localScale = Vector3.one * 2f;
-                copa.GetComponent<Renderer>().sharedMaterial = Mat("hojas", Hex(s.color, new Color(0.2f, 0.55f, 0.25f)));
+                var a = ArbolMuerto(rnd, Mat("tronco_muerto", Hex(s.color, new Color(0.12f, 0.1f, 0.09f))), 4f + (float)rnd.NextDouble() * 2f);
+                a.transform.SetParent(g.transform, false);
+                var cap = g.AddComponent<CapsuleCollider>(); cap.radius = 0.35f; cap.height = 3f; cap.center = Vector3.up * 1.5f;
             }
             g.transform.localScale *= Mathf.Max(0.2f, s.escala);
             return g;

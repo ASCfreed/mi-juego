@@ -22,7 +22,8 @@
       "color": "",
       "nombre": "",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "V",
@@ -38,7 +39,8 @@
           "quien": "Virgilio",
           "texto": "Son los que sometieron la razón al deseo. La bufera infernal que nunca descansa los arrastra."
         }
-      ]
+      ],
+      "voz": ""
     },
     {
       "simbolo": "F",
@@ -78,7 +80,8 @@
           "quien": "",
           "texto": "Paolo llora en silencio. El viento vuelve y los arranca. Dante extiende la mano… y no llega."
         }
-      ]
+      ],
+      "voz": ""
     },
     {
       "simbolo": "Q",
@@ -94,13 +97,14 @@
           "quien": "",
           "texto": "Paolo no dice una palabra. Solo llora."
         }
-      ]
+      ],
+      "voz": ""
     }
   ],
   "jugador": {
     "modelo": "dante",
     "vida": 7,
-    "arma": ""
+    "arma": "espada"
   },
   "intro": [
     {
@@ -131,5 +135,6 @@
   "cielo": "#2b1d3a",
   "niebla": true,
   "altura_muros": 4,
-  "color_muros": "#3a2f45"
+  "color_muros": "#3a2f45",
+  "ambiente": "tormenta"
 }

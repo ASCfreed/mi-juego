@@ -24,7 +24,8 @@
       "color": "",
       "nombre": "",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "A",
@@ -35,7 +36,8 @@
       "color": "",
       "nombre": "La pantera",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "L",
@@ -46,7 +48,8 @@
       "color": "",
       "nombre": "El león",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "W",
@@ -57,7 +60,8 @@
       "color": "",
       "nombre": "La loba",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "V",
@@ -93,13 +97,14 @@
           "quien": "Dante",
           "texto": "Ve. Que un solo querer nos guíe a los dos. Tú, guía; tú, señor; tú, maestro."
         }
-      ]
+      ],
+      "voz": ""
     }
   ],
   "jugador": {
     "modelo": "dante",
     "vida": 6,
-    "arma": ""
+    "arma": "espada"
   },
   "intro": [
     {
@@ -116,7 +121,15 @@
     },
     {
       "quien": "",
-      "texto": "Muévete con el joystick. Toca ATACAR para golpear con la cuerda. Busca la luz entre los árboles."
+      "texto": "Joystick: moverte. ATACAR: combo de tres golpes. CORRER: esprint (gasta estamina)."
+    },
+    {
+      "quien": "",
+      "texto": "Destello AMARILLO: mantén CUBRIR. Púlsalo justo antes del golpe y harás PARRY: el enemigo queda aturdido y tu siguiente golpe es de gracia."
+    },
+    {
+      "quien": "",
+      "texto": "Destello ROJO: no se puede bloquear. ¡ESQUIVA!"
     }
   ],
   "salida": [
@@ -134,5 +147,6 @@
   "cielo": "#1b2333",
   "niebla": true,
   "altura_muros": 4,
-  "color_muros": "#1f2a1c"
+  "color_muros": "#1f2a1c",
+  "ambiente": "selva"
 }

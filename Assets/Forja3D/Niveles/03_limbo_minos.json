@@ -24,7 +24,8 @@
       "color": "",
       "nombre": "",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "J",
@@ -35,7 +36,8 @@
       "color": "",
       "nombre": "Minos",
       "seguir": false,
-      "dialogo": []
+      "dialogo": [],
+      "voz": ""
     },
     {
       "simbolo": "V",
@@ -63,7 +65,8 @@
           "quien": "Virgilio",
           "texto": "Sigue. Abajo nos espera quien juzga a las almas."
         }
-      ]
+      ],
+      "voz": ""
     },
     {
       "simbolo": "H",
@@ -83,13 +86,14 @@
           "quien": "",
           "texto": "Y me hicieron todavía más honor, pues me pusieron en su círculo, y fui el sexto entre tanto saber."
         }
-      ]
+      ],
+      "voz": ""
     }
   ],
   "jugador": {
     "modelo": "dante",
     "vida": 6,
-    "arma": ""
+    "arma": "espada"
   },
   "intro": [
     {
@@ -120,5 +124,6 @@
   "cielo": "#363b46",
   "niebla": false,
   "altura_muros": 5,
-  "color_muros": "#9a958a"
+  "color_muros": "#9a958a",
+  "ambiente": "limbo"
 }

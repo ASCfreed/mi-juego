@@ -13,6 +13,15 @@ namespace Forja3D
         public float sensibilidad = 1f;
         public Vector2 limitesPitch = new Vector2(-10f, 70f);
         float yaw, pitch = 18f;
+        float tiembla, tiemblaHasta, tiemblaDur = 1f;
+        Vector3 suave; bool iniciado;
+
+        // Temblor de cámara (golpes fuertes, jefes)
+        public void Temblar(float fuerza, float duracion)
+        {
+            if (fuerza < tiembla && Time.unscaledTime < tiemblaHasta) return;
+            tiembla = fuerza; tiemblaDur = Mathf.Max(0.01f, duracion); tiemblaHasta = Time.unscaledTime + duracion;
+        }
 
         void Start() { if (objetivo) yaw = objetivo.eulerAngles.y; }
 
@@ -29,7 +38,14 @@ namespace Forja3D
             var deseada = foco - rot * Vector3.forward * distancia;
             if (Physics.Linecast(foco, deseada, out var hit, ~0, QueryTriggerInteraction.Ignore) && !hit.transform.IsChildOf(objetivo))
                 deseada = hit.point + hit.normal * 0.2f;
-            transform.SetPositionAndRotation(Vector3.Lerp(transform.position, deseada, 15f * Time.deltaTime), rot);
+            if (!iniciado) { suave = transform.position; iniciado = true; }
+            var pos = suave = Vector3.Lerp(suave, deseada, 15f * Time.unscaledDeltaTime);
+            if (Time.unscaledTime < tiemblaHasta)
+            {
+                float k = (tiemblaHasta - Time.unscaledTime) / tiemblaDur;
+                transform.SetPositionAndRotation(pos + Random.insideUnitSphere * tiembla * k, rot);
+            }
+            else transform.SetPositionAndRotation(pos, rot);
         }
     }
 }

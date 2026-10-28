@@ -12,16 +12,23 @@ namespace Forja3D
         public int Vida { get; private set; }
         public bool Muerto => Vida <= 0;
         public event Action AlRecibirDanio, AlMorir;
+        // Lo usa el jugador para bloquear/hacer parry: recibe (daño, atacante, imparable) y devuelve el daño final
+        public Func<int, Transform, bool, int> Interceptar;
+        public float InvulnerableHasta;   // esquiva: frames de invulnerabilidad
+        public Transform UltimoAtacante { get; private set; }
 
         float ultimoGolpe = -99f;
         Animator anim;
 
         void Awake() { Vida = vidaMaxima; anim = GetComponentInChildren<Animator>(); }
 
-        public void Danio(int cantidad = 1)
+        public bool Danio(int cantidad = 1, Transform fuente = null, bool imparable = false)
         {
-            if (Muerto || Time.time - ultimoGolpe < invulnerable) return;
+            if (Muerto || Time.time - ultimoGolpe < invulnerable || Time.time < InvulnerableHasta) return false;
+            if (Interceptar != null) cantidad = Interceptar(cantidad, fuente, imparable);
+            if (cantidad <= 0) return false;
             ultimoGolpe = Time.time;
+            UltimoAtacante = fuente;
             Vida = Mathf.Max(0, Vida - cantidad);
             if (Muerto)
             {
@@ -33,6 +40,7 @@ namespace Forja3D
                 Forja3DAnim.Trigger(anim, "Hit");
                 AlRecibirDanio?.Invoke();
             }
+            return true;
         }
 
         public void Curar(int cantidad) { if (!Muerto) Vida = Mathf.Min(vidaMaxima, Vida + cantidad); }

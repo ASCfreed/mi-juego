@@ -108,6 +108,7 @@ namespace Forja3D
             for (int i = 1; i <= completo.Length; i++)
             {
                 texto.text = completo.Substring(0, i);
+                if (i % 3 == 0 && !char.IsWhiteSpace(completo[i - 1])) Forja3DAudio.Sonar("dialogo", null, 0.5f, 0.1f);
                 yield return new WaitForSecondsRealtime(0.022f);
             }
             escribiendo = false; pista.enabled = true;
