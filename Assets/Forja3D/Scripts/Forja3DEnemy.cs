@@ -66,6 +66,7 @@ namespace Forja3D
             agente.avoidancePriority = Random.Range(30, 70);
             vida.invulnerable = Mathf.Min(vida.invulnerable, 0.12f); // los combos del jugador deben conectar
             if (anim) anim.applyRootMotion = false;
+            Forja3DSinRaiz.Poner(anim);
             vida.AlMorir += Morir;
             vida.AlRecibirDanio += AlRecibirGolpe;
         }
@@ -399,8 +400,18 @@ namespace Forja3D
 
         IEnumerator Caida()
         {
-            var rot = transform.rotation; var fin = rot * Quaternion.Euler(-80f, 0, 0);
-            for (float t = 0; t < 1f; t += Time.deltaTime / 0.7f) { transform.rotation = Quaternion.Slerp(rot, fin, t * t); yield return null; }
+            // Las fieras caen de costado; los bípedos, de espaldas
+            bool cuadrupedo = voz == "fiera";
+            var rot = transform.rotation; var fin = rot * (cuadrupedo ? Quaternion.Euler(0, 0, 88f) : Quaternion.Euler(-80f, 0, 0));
+            var ini = transform.position; var rend = GetComponentInChildren<Renderer>();
+            float ancho = rend ? Mathf.Min(rend.bounds.size.x, rend.bounds.size.z) : 0.6f;
+            for (float t = 0; t < 1f; t += Time.deltaTime / 0.6f)
+            {
+                transform.rotation = Quaternion.Slerp(rot, fin, t * t);
+                if (cuadrupedo) transform.position = ini + Vector3.up * (ancho * 0.45f * Mathf.Sin(t * Mathf.PI * 0.5f)); // no se hunde al rodar
+                yield return null;
+            }
+            transform.rotation = fin;
             Forja3DAudio.Sonar("caida_cuerpo", transform.position, 0.7f);
         }
 
@@ -432,8 +443,10 @@ namespace Forja3D
             foreach (var c in GetComponentsInChildren<Collider>()) c.enabled = false;
             Forja3DAudio.Sonar("muerte_" + voz, Cabeza, 1f, 0.1f);
             Forja3DFX.Sangre(transform.position + Vector3.up, Vector3.up, esJefe ? 60 : 30);
-            bool clipMuerte = Forja3DAnim.Tiene(anim, "Dead", AnimatorControllerParameterType.Bool);
-            if (!clipMuerte) StartCoroutine(Caida());
+            // El parámetro "Dead" existe siempre; lo que importa es si hay un estado con clip de muerte
+            // (las fieras de Tripo solo traen "caminar": sin esto seguían andando en el sitio al morir)
+            bool clipMuerte = anim && anim.HasState(0, Animator.StringToHash("Muerte"));
+            if (!clipMuerte) { if (anim) anim.enabled = false; StartCoroutine(Caida()); }
             if (esJefe)
             {
                 // Derrota del jefe: cámara lenta, temblor y el cuerpo queda en el suelo

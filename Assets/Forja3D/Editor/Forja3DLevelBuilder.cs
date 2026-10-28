@@ -603,7 +603,7 @@ namespace Forja3D.EditorTools
         {
             ["dante"] = 1.8f, ["virgilio"] = 1.82f, ["francesca"] = 1.68f, ["paolo"] = 1.8f, ["condenado"] = 1.78f,
             ["muerte"] = 3.0f, ["caron"] = 2.7f, ["minos"] = 2.9f,
-            ["pantera"] = 1.0f, ["leon"] = 1.3f, ["loba"] = 1.05f,
+            ["pantera"] = 1.45f, ["leon"] = 1.85f, ["loba"] = 1.5f, // a la cruz; exageradas a propósito
         };
         // Los jefes se exageran un 30 % para que impongan
         const float EscalaJefe = 1.3f;
@@ -777,13 +777,13 @@ namespace Forja3D.EditorTools
             string m = (s.modelo ?? "").ToLowerInvariant();
             bool fiera = m.Contains("pantera") || m.Contains("leon") || m.Contains("lob") || m.Contains("perro") || m.Contains("cerbero");
             e.voz = !string.IsNullOrEmpty(s.voz) ? s.voz : fiera ? "fiera" : jefe ? "jefe" : "condenado";
-            if (fiera) { e.velocidad = 3.6f; e.radioAtaque = 1.5f * esc; e.probImparable = 0.3f; }
+            if (fiera) { e.velocidad = 3.6f; e.radioAtaque = Mathf.Max(1.5f, AlturaDe(s.modelo, "enemigo", true) * 1.1f) * esc; e.probImparable = 0.3f; }
             if (jefe)
             {
                 e.esJefe = true; e.danio = 2; e.velocidad = fiera ? 3.2f : 2.4f; e.enfriamiento = 1.6f;
                 // El alcance crece con el tamaño real del modelo (jefes de 2,5-3 m)
                 float altoReal = AlturaDe(s.modelo, "jefe", fiera) * esc;
-                e.radioDeteccion = 14f; e.radioAtaque = Mathf.Max(1.5f * esc, altoReal * 0.55f); e.radioPatrulla = 2f; e.probImparable = 0.25f;
+                e.radioDeteccion = 14f; e.radioAtaque = Mathf.Max(1.5f * esc, altoReal * (fiera ? 1.1f : 0.55f)); e.radioPatrulla = 2f; e.probImparable = 0.25f; // un cuadrúpedo es más largo que alto
             }
         }
 

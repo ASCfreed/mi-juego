@@ -403,7 +403,7 @@ namespace Forja3D.EditorTools
 
         // Súbelo cada vez que cambie la forma de importar: Unity solo reimporta los modelos ya importados
         // (la carpeta Library se guarda en caché entre compilaciones) si cambia esta versión.
-        public override uint GetVersion() => 8;
+        public override uint GetVersion() => 9;
 
         bool EsNuestro => assetPath.StartsWith(Forja3DImporter.Raiz) && assetPath.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase);
 
@@ -436,8 +436,9 @@ namespace Forja3D.EditorTools
                 return;
             }
             mi.animationType = Forja3DImporter.EsTripo(m) ? ModelImporterAnimationType.Generic : ModelImporterAnimationType.Human;
-            // Tripo exporta desde Blender (Z arriba): sin esto, las animaciones que tocan el nodo "Armature" tumban al jefe
-            if (Forja3DImporter.EsTripo(m)) mi.bakeAxisConversion = true;
+            // (bakeAxisConversion NO: con él los jefes de Tripo quedaban mirando hacia atrás; de pie los mantiene
+            // Forja3DEstabilizador)
+            mi.bakeAxisConversion = false;
             mi.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
             mi.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
         }

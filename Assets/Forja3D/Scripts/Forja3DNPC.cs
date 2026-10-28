@@ -24,6 +24,7 @@ namespace Forja3D
             if (p) jugador = p.transform;
             anim = GetComponentInChildren<Animator>();
             if (anim) anim.applyRootMotion = false;
+            Forja3DSinRaiz.Poner(anim);
             agente = GetComponent<NavMeshAgent>();
         }
 

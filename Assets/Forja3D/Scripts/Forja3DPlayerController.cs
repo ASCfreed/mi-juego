@@ -47,23 +47,8 @@ namespace Forja3D
         CharacterController cc;
         Animator anim;
         Transform visual, caderas;
-        Vector3 caderasBase, posVisual; float centrarHasta = -1f; bool centrando;
+        bool visualPropio => visual && visual != transform; // el Animator suele estar en el mismo objeto que el CharacterController
 
-        // La voltereta (Roll_Dodge) avanza ~3 m dentro del propio clip. Ese avance se anula aquí, cada fotograma,
-        // para que el cuerpo quede siempre sobre el CharacterController (que es quien recorre la distancia):
-        // así no hay saltos ni "regresos" al terminar.
-        void LateUpdate()
-        {
-            if (!visual || !caderas) return;
-            if (Time.time < centrarHasta)
-            {
-                visual.localPosition = posVisual;
-                var d = caderas.position - transform.TransformPoint(caderasBase); d.y = 0f;
-                visual.position -= d;
-                centrando = true;
-            }
-            else if (centrando) { visual.localPosition = posVisual; centrando = false; }
-        }
         Forja3DHealth vida;
         Transform cam;
         float vy, velAnim, ultimoMovimiento, ultimoGasto = -9f, inicioCubrir = -9f, proximoPaso, aturdidoHasta;
@@ -83,6 +68,7 @@ namespace Forja3D
             vida = GetComponent<Forja3DHealth>();
             if (anim) anim.applyRootMotion = false;
             if (anim && anim.isHuman) caderas = anim.GetBoneTransform(HumanBodyBones.Hips);
+            Forja3DSinRaiz.Poner(anim);
             Estamina = estaminaMaxima;
             if (anim) { capaTorso = anim.GetLayerIndex("Torso"); if (capaTorso >= 0) anim.SetLayerWeight(capaTorso, 0f); }
         }
@@ -368,7 +354,6 @@ namespace Forja3D
             Forja3DAudio.Sonar("esquiva", transform.position + Vector3.up * 0.5f, 0.8f);
             bool clip = Forja3DAnim.Tiene(anim, "Dodge", AnimatorControllerParameterType.Trigger);
             if (clip) Forja3DAnim.Trigger(anim, "Dodge");
-            if (clip && caderas && visual) { caderasBase = transform.InverseTransformPoint(caderas.position); centrarHasta = Time.time + 1.2f; posVisual = visual.localPosition; }
             const float dur = 0.5f;
             var rotIni = transform.rotation; var rotFin = Quaternion.LookRotation(dir);
             var posVis = visual ? visual.localPosition : Vector3.zero;
@@ -380,7 +365,7 @@ namespace Forja3D
                 float v = Mathf.Lerp(13f, 4f, k * k);
                 vy += gravedad * Time.deltaTime; if (cc.isGrounded && vy < 0) vy = -2f;
                 cc.Move((dir * v + Vector3.up * vy) * Time.deltaTime);
-                if (!clip && visual)
+                if (!clip && visualPropio)
                 {
                     // Sin clip: agachado e inclinado hacia delante (sin girar el modelo entero)
                     float baja = Mathf.Sin(k * Mathf.PI);
@@ -389,8 +374,8 @@ namespace Forja3D
                 }
                 yield return null;
             }
-            if (visual) { visual.localPosition = posVis; visual.localRotation = rotVis; }
-            if (clip) centrarHasta = Time.time + 0.45f; // sigue centrando mientras el clip vuelve a idle
+            // (antes esto devolvía a Dante al punto de partida: "visual" es el propio jugador cuando el Animator está en él)
+            if (!clip && visualPropio) { visual.localPosition = posVis; visual.localRotation = rotVis; }
             ultimoSeguro = Vector3.zero; proximoChequeo = 0f;
             esquivando = false;
         }

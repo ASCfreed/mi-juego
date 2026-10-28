@@ -18,7 +18,14 @@ namespace Forja3D
             foreach (Transform hijo in transform)
                 if (!hijo.GetComponent<Renderer>() && hijo.childCount > 0)
                     nodos.Add((hijo, hijo.localPosition, hijo.localRotation, hijo.localScale));
+            foreach (var t in GetComponentsInChildren<Transform>(true))
+                if (t.name.Equals("Hip", System.StringComparison.OrdinalIgnoreCase)) { cadera = t; break; }
         }
+
+        // Los clips de Tripo para bípedos avanzan la cadera ~1,3 m por ciclo de caminar y luego la devuelven de
+        // golpe (el jefe parecía andar hacia atrás a tirones). Se fija la cadera en horizontal sobre el origen:
+        // la animación queda en el sitio y quien desplaza al jefe es el NavMeshAgent.
+        Transform cadera;
 
         void LateUpdate()
         {
@@ -26,6 +33,11 @@ namespace Forja3D
             {
                 if (!n.t) continue;
                 n.t.localPosition = n.pos; n.t.localRotation = n.rot; n.t.localScale = n.esc;
+            }
+            if (cadera)
+            {
+                var local = transform.InverseTransformPoint(cadera.position);
+                cadera.position = transform.TransformPoint(new Vector3(0f, local.y, 0f));
             }
         }
     }
