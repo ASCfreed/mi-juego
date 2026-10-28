@@ -1,0 +1,20 @@
+{
+  "forja3d": 1,
+  "personaje": true,
+  "esqueleto": "meshy",
+  "biblioteca": false,
+  "archivos": [
+    {
+      "nombre": "personaje",
+      "tipo": "modelo"
+    },
+    {
+      "nombre": "caminar",
+      "tipo": "animacion"
+    },
+    {
+      "nombre": "correr",
+      "tipo": "animacion"
+    }
+  ]
+}
