@@ -116,7 +116,15 @@ public static class Forja3DBuild
             var r = reporte.summary;
             Debug.Log($"[Forja3D] Formato: {(aab ? "AAB (Google Play)" : "APK")} · API destino 36");
             Debug.Log($"[Forja3D] Resultado: {r.result} · {r.totalSize / (1024f * 1024f):0.0} MB · {r.totalTime} · errores {r.totalErrors}");
-            if (r.result != BuildResult.Succeeded) Salir(1);
+            if (r.result != BuildResult.Succeeded)
+            {
+                // Vuelca los errores reales de la compilación con la etiqueta [Forja3D] (el conector los lee del log)
+                foreach (var paso in reporte.steps)
+                    foreach (var msg in paso.messages)
+                        if (msg.type == LogType.Error || msg.type == LogType.Exception)
+                            Debug.Log($"[Forja3D] ERROR en '{paso.name}': {msg.content.Replace('\n', ' ').Substring(0, Mathf.Min(400, msg.content.Length))}");
+                Salir(1);
+            }
         }
         catch (Exception e)
         {
