@@ -137,7 +137,7 @@ namespace Forja3D
             if (!esquivando)
             {
                 Vector3 mirar = dir;
-                if (Cubriendo || atacando) { var e = Objetivo(6f, 360f); if (e) { mirar = e.transform.position - transform.position; mirar.y = 0; } }
+                if (Cubriendo || atacando) { var e = BuscarObjetivo(6f, 360f); if (e) { mirar = e.transform.position - transform.position; mirar.y = 0; } }
                 if (mirar.sqrMagnitude > 0.001f)
                     transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(mirar), (atacando ? 18f : giro) * Time.deltaTime);
             }
@@ -172,7 +172,7 @@ namespace Forja3D
         }
 
         // Enemigo más cercano delante (para orientar los golpes)
-        Forja3DEnemy Objetivo(float radio, float angulo)
+        Forja3DEnemy BuscarObjetivo(float radio, float angulo)
         {
             Forja3DEnemy mejor = null; float mejorD = radio;
             foreach (var e in Forja3DEnemy.Activos)
@@ -204,7 +204,7 @@ namespace Forja3D
                             : pasoCombo == 3 && Forja3DAnim.Tiene(anim, "Skill2", AnimatorControllerParameterType.Trigger) ? "Skill2" : "Attack";
                 Forja3DAnim.Trigger(anim, trig);
 
-                var obj = Objetivo(5f, 140f);
+                var obj = BuscarObjetivo(5f, 140f);
                 if (obj)
                 {
                     var d = obj.transform.position - transform.position; d.y = 0;

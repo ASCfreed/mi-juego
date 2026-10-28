@@ -291,11 +291,14 @@ namespace Forja3D.EditorTools
                     float alto = k * k * (0.25f + 0.75f * colinas) * (0.35f + 0.5f * ruido + 0.15f * detalle) * alturaMax;
                     // Suelo jugable con ondulación suave (no afecta a la navegación)
                     if (d <= 0) alto = (detalle - 0.5f) * 0.25f + 0.12f;
+                    // Justo fuera del mapa, el borde de acantilado continúa y se funde con las colinas
+                    else alto = Mathf.Max(alto, n.altura_muros * (1.1f + 0.5f * ruido) * (1f - Mathf.SmoothStep(0f, 1f, d / 14f)));
                     // Crestas rocosas sobre las celdas de muro
-                    float dm = DistanciaMuro(wx, wz, c, filas, cols, esMuro);
-                    if (dm < c * 0.45f)
+                    float prof = ProfundidadMuro(wx, wz, c, filas, cols, esMuro);
+                    if (prof > 0f)
                     {
-                        float caida = Mathf.SmoothStep(0f, 1f, 1f - dm / (c * 0.45f));
+                        // El relieve sube solo DENTRO de las celdas de muro: los pasos quedan limpios
+                        float caida = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(prof / (c * 0.4f)));
                         float cresta = n.altura_muros * (1.05f + 0.6f * Mathf.PerlinNoise(ox + wx * 0.31f, oz + wz * 0.31f)) + detalle * 0.8f;
                         alto = Mathf.Max(alto, cresta * caida);
                     }
@@ -344,21 +347,24 @@ namespace Forja3D.EditorTools
             return ter;
         }
 
-        // Distancia (en metros) desde un punto a la celda de muro más cercana (0 si está dentro)
-        static float DistanciaMuro(float wx, float wz, float c, int filas, int cols, bool[,] esMuro)
+        // Profundidad (m) de un punto dentro de una celda de muro: distancia a la celda de suelo más cercana.
+        // 0 si el punto está en suelo. Fuera del mapa cuenta como muro (las colinas lo rodean).
+        static float ProfundidadMuro(float wx, float wz, float c, int filas, int cols, bool[,] esMuro)
         {
-            int cc = Mathf.RoundToInt(wx / c), fz = Mathf.RoundToInt(wz / c);
-            float mejor = float.MaxValue;
+            bool Muro(int col, int fz) { int fila = filas - 1 - fz; return col < 0 || fila < 0 || col >= cols || fila >= filas || esMuro[fila, col]; }
+            int cc = Mathf.RoundToInt(wx / c), fz0 = Mathf.RoundToInt(wz / c);
+            if (cc < 0 || fz0 < 0 || cc >= cols || fz0 >= filas) return 0f; // fuera: lo gestionan las colinas
+            if (!Muro(cc, fz0)) return 0f;
+            float mejor = c;
             for (int dz = -1; dz <= 1; dz++)
                 for (int dx = -1; dx <= 1; dx++)
                 {
-                    int col = cc + dx, fila = filas - 1 - (fz + dz);
-                    if (col < 0 || fila < 0 || col >= cols || fila >= filas || !esMuro[fila, col]) continue;
-                    float cx = col * c, cz = (fz + dz) * c;
+                    if (Muro(cc + dx, fz0 + dz)) continue;
+                    float cx = (cc + dx) * c, cz = (fz0 + dz) * c;
                     float ex = Mathf.Max(0, Mathf.Abs(wx - cx) - c / 2f), ez = Mathf.Max(0, Mathf.Abs(wz - cz) - c / 2f);
                     mejor = Mathf.Min(mejor, Mathf.Sqrt(ex * ex + ez * ez));
                 }
-            return mejor;
+            return Mathf.Max(0.0001f, mejor);
         }
 
         static TerrainLayer Capa(string id, string nombre, Texture2D tex, float tile)
@@ -617,22 +623,63 @@ namespace Forja3D.EditorTools
             Arma(g, !string.IsNullOrEmpty(n.jugador?.arma) ? n.jugador.arma : Forja3DImporter.RutaPrefab("espada") ? "espada" : null);
         }
 
-        // Coloca un arma generada (p. ej. "guadana") en la mano derecha de un humanoide
+        // Coloca un arma generada (p. ej. "espada") en la mano derecha de un humanoide.
+        // Detecta solo el eje largo y la empuñadura (el extremo cercano a la guarda, la parte más ancha),
+        // y la orienta hacia delante del personaje en su pose de referencia (T-pose).
         static void Arma(GameObject portador, string modelo)
         {
             if (string.IsNullOrEmpty(modelo)) return;
             var anim = portador.GetComponentInChildren<Animator>();
             var mano = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
+            var antebrazo = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightLowerArm) : null;
             var arma = InstanciarModelo(modelo);
             if (!mano || !arma) { if (arma) UnityEngine.Object.DestroyImmediate(arma); Debug.LogWarning($"[Forja3D] No se pudo poner el arma '{modelo}'."); return; }
             foreach (var c in arma.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(c);
-            var b = Forja3DImporter.Limites(arma);
-            float largo = Mathf.Max(b.size.x, b.size.y, b.size.z, 0.01f);
-            arma.transform.SetParent(mano, false);
-            arma.transform.localScale = Vector3.one * (1.2f / largo) / Mathf.Max(0.0001f, mano.lossyScale.x);
-            arma.transform.localPosition = Vector3.zero;
-            arma.transform.localRotation = Quaternion.Euler(0, 0, 90);
+            arma.transform.position = Vector3.zero; arma.transform.rotation = Quaternion.identity; arma.transform.localScale = Vector3.one;
+
+            // Vértices en el espacio del arma
+            var pts = new List<Vector3>();
+            foreach (var mf in arma.GetComponentsInChildren<MeshFilter>())
+                if (mf.sharedMesh) foreach (var v in mf.sharedMesh.vertices) pts.Add(arma.transform.InverseTransformPoint(mf.transform.TransformPoint(v)));
+            foreach (var sk in arma.GetComponentsInChildren<SkinnedMeshRenderer>())
+                if (sk.sharedMesh) foreach (var v in sk.sharedMesh.vertices) pts.Add(arma.transform.InverseTransformPoint(sk.transform.TransformPoint(v)));
+            if (pts.Count == 0) { UnityEngine.Object.DestroyImmediate(arma); return; }
+            var min = pts[0]; var max = pts[0];
+            foreach (var q in pts) { min = Vector3.Min(min, q); max = Vector3.Max(max, q); }
+            var tam = max - min;
+            int eje = tam.x >= tam.y && tam.x >= tam.z ? 0 : tam.y >= tam.z ? 1 : 2;
+            float largo = Mathf.Max(tam[eje], 0.001f);
+
+            // Perfil de anchura a lo largo del eje: la guarda es el tramo más ancho
+            const int B = 20; var ancho = new float[B];
+            var centro = (min + max) / 2f;
+            foreach (var q in pts)
+            {
+                int i = Mathf.Clamp((int)((q[eje] - min[eje]) / largo * B), 0, B - 1);
+                var d = q - centro; d[eje] = 0;
+                ancho[i] = Mathf.Max(ancho[i], d.magnitude);
+            }
+            int guarda = 0; for (int i = 1; i < B; i++) if (ancho[i] > ancho[guarda]) guarda = i;
+            bool empunaduraEnMin = guarda < B / 2;                // la empuñadura está en el extremo más cercano a la guarda
+            float tGuarda = (guarda + 0.5f) / B;
+            float tAgarre = empunaduraEnMin ? tGuarda * 0.5f : 1f - (1f - tGuarda) * 0.5f;
+            var agarre = centro; agarre[eje] = min[eje] + tAgarre * largo;
+            var haciaPunta = Vector3.zero; haciaPunta[eje] = empunaduraEnMin ? 1f : -1f;
+
+            // Escala: 1,1 m de largo para un personaje de 1,8 m
+            float escPortador = portador.transform.lossyScale.y;
+            float k = 1.1f * escPortador / largo;
+            arma.transform.localScale = Vector3.one * k;
+            // Orienta la hoja hacia delante y un poco hacia arriba
+            var destino = (portador.transform.forward + portador.transform.up * 0.35f).normalized;
+            arma.transform.rotation = Quaternion.FromToRotation(haciaPunta, destino);
+            // Puño: un poco más allá del hueso de la mano, en la dirección del brazo
+            var dirBrazo = antebrazo ? (mano.position - antebrazo.position).normalized : portador.transform.right;
+            var puno = mano.position + dirBrazo * 0.08f * escPortador;
+            arma.transform.position += puno - arma.transform.TransformPoint(agarre);
+            arma.transform.SetParent(mano, true);
             arma.name = "Arma";
+            GameObjectUtility.SetStaticEditorFlags(arma, (StaticEditorFlags)0);
         }
 
         static void Enemigo(Simbolo s, Vector3 p, Transform padre, string id, bool jefe)
