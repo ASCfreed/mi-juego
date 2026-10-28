@@ -565,7 +565,7 @@ namespace Forja3D.EditorTools
                 {
                     GameObject a = hayArbol ? InstanciarModelo("arbol") : ArbolMuerto(rnd, matTronco, 3.5f + (float)rnd.NextDouble() * 3f);
                     foreach (var col in a.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(col);
-                    if (hayArbol) { var b = Forja3DImporter.Limites(a); a.transform.localScale *= (3.5f + (float)rnd.NextDouble() * 3f) / Mathf.Max(0.01f, b.size.y); }
+                    if (hayArbol) { Enderezar(a); AjustarAltura(a, 6f + (float)rnd.NextDouble() * 4f); }
                     a.transform.SetParent(grupo); a.transform.position = p - Vector3.up * 0.1f;
                     a.transform.rotation = Quaternion.Euler(0, (float)rnd.NextDouble() * 360, 0);
                     GameObjectUtility.SetStaticEditorFlags(a, StaticEditorFlags.BatchingStatic);
@@ -598,6 +598,23 @@ namespace Forja3D.EditorTools
             return g;
         }
 
+        // Altura objetivo (m) de cada modelo conocido; el resto usa la del tipo. "escala" del nivel la multiplica.
+        static readonly Dictionary<string, float> Alturas = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["dante"] = 1.8f, ["virgilio"] = 1.82f, ["francesca"] = 1.68f, ["paolo"] = 1.8f, ["condenado"] = 1.78f,
+            ["muerte"] = 3.0f, ["caron"] = 2.7f, ["minos"] = 2.9f,
+            ["pantera"] = 1.0f, ["leon"] = 1.3f, ["loba"] = 1.05f,
+        };
+        static float AlturaDe(string modelo, string tipo, bool fiera) =>
+            !string.IsNullOrEmpty(modelo) && Alturas.TryGetValue(modelo, out var h) ? h : fiera ? 1.1f : tipo == "jefe" ? 2.6f : 1.8f;
+
+        // Escala un modelo para que mida exactamente 'metros' de alto (los FBX de Meshy y Tripo llegan en unidades distintas)
+        static void AjustarAltura(GameObject g, float metros)
+        {
+            var b = Forja3DImporter.Limites(g);
+            if (b.size.y > 0.01f) g.transform.localScale *= metros / b.size.y;
+        }
+
         static GameObject Capsula(string nombre, Color color, string id)
         {
             var raiz = new GameObject(nombre);
@@ -616,6 +633,7 @@ namespace Forja3D.EditorTools
         {
             var g = InstanciarModelo(n.jugador?.modelo) ?? Capsula("Jugador", new Color(0.2f, 0.45f, 0.95f), "j");
             g.name = "Jugador"; g.tag = "Player"; g.transform.SetParent(padre);
+            if (g.GetComponentInChildren<Animator>()) AjustarAltura(g, AlturaDe(n.jugador?.modelo, "jugador", false));
             g.transform.position = p + Vector3.up * 0.05f;
             var cc = g.GetComponent<CharacterController>();
             if (!cc) { cc = g.AddComponent<CharacterController>(); cc.height = 2f; cc.radius = 0.4f; cc.center = Vector3.up; }
@@ -670,14 +688,15 @@ namespace Forja3D.EditorTools
 
             // Escala: 1,1 m de largo para un personaje de 1,8 m
             float escPortador = portador.transform.lossyScale.y;
-            float k = 1.1f * escPortador / largo;
+            float k = 0.95f * escPortador / largo;
             arma.transform.localScale = Vector3.one * k;
             // Orienta la hoja hacia delante y un poco hacia arriba
-            var destino = (portador.transform.forward + portador.transform.up * 0.35f).normalized;
+            // En T-pose la palma mira abajo y el pulgar hacia delante: la hoja sale en la dirección del pulgar
+            var destino = portador.transform.forward;
             arma.transform.rotation = Quaternion.FromToRotation(haciaPunta, destino);
             // Puño: un poco más allá del hueso de la mano, en la dirección del brazo
             var dirBrazo = antebrazo ? (mano.position - antebrazo.position).normalized : portador.transform.right;
-            var puno = mano.position + dirBrazo * 0.08f * escPortador;
+            var puno = mano.position + dirBrazo * 0.085f * escPortador - portador.transform.up * 0.03f * escPortador;
             arma.transform.position += puno - arma.transform.TransformPoint(agarre);
             arma.transform.SetParent(mano, true);
             arma.name = "Arma";
@@ -713,7 +732,12 @@ namespace Forja3D.EditorTools
             var g = InstanciarModelo(s.modelo) ?? Capsula(jefe ? "Jefe" : "Enemigo", Hex(s.color, jefe ? new Color(0.45f, 0.05f, 0.1f) : new Color(0.85f, 0.2f, 0.2f)), id);
             g.name = jefe ? "Jefe" : "Enemigo"; g.transform.SetParent(padre);
             float esc = Mathf.Max(0.2f, s.escala);
-            g.transform.position = p; g.transform.localScale *= esc;
+            string mod0 = (s.modelo ?? "").ToLowerInvariant();
+            bool fiera0 = mod0.Contains("pantera") || mod0.Contains("leon") || mod0.Contains("lob") || mod0.Contains("perro") || mod0.Contains("cerbero");
+            g.transform.position = p;
+            if (g.GetComponentInChildren<Renderer>() && !string.IsNullOrEmpty(s.modelo) && Forja3DImporter.RutaPrefab(s.modelo))
+                AjustarAltura(g, AlturaDe(s.modelo, jefe ? "jefe" : "enemigo", fiera0) * esc);
+            else g.transform.localScale *= esc;
             var cc = g.GetComponent<CharacterController>();
             float alto = cc ? cc.height : 2f, radio = cc ? cc.radius : 0.4f;
             if (!cc)
@@ -736,7 +760,7 @@ namespace Forja3D.EditorTools
             {
                 e.esJefe = true; e.danio = 2; e.velocidad = fiera ? 3.2f : 2.4f; e.enfriamiento = 1.6f;
                 // El alcance crece con el tamaño real del modelo (jefes de 2,5-3 m)
-                float altoReal = Forja3DImporter.Limites(g).size.y;
+                float altoReal = AlturaDe(s.modelo, "jefe", fiera) * esc;
                 e.radioDeteccion = 14f; e.radioAtaque = Mathf.Max(1.5f * esc, altoReal * 0.55f); e.radioPatrulla = 2f; e.probImparable = 0.25f;
             }
         }
@@ -745,7 +769,9 @@ namespace Forja3D.EditorTools
         {
             var g = InstanciarModelo(s.modelo) ?? Capsula(string.IsNullOrEmpty(s.nombre) ? "Personaje" : s.nombre, Hex(s.color, new Color(0.85f, 0.82f, 0.7f)), id);
             g.name = string.IsNullOrEmpty(s.nombre) ? "Personaje" : s.nombre;
-            g.transform.SetParent(padre); g.transform.position = p; g.transform.localScale *= Mathf.Max(0.2f, s.escala);
+            g.transform.SetParent(padre); g.transform.position = p;
+            if (!string.IsNullOrEmpty(s.modelo) && Forja3DImporter.RutaPrefab(s.modelo)) AjustarAltura(g, AlturaDe(s.modelo, "npc", false) * Mathf.Max(0.2f, s.escala));
+            else g.transform.localScale *= Mathf.Max(0.2f, s.escala);
             var cc = g.GetComponent<CharacterController>();
             float alto = cc ? cc.height : 2f, radio = cc ? cc.radius : 0.4f;
             if (cc) UnityEngine.Object.DestroyImmediate(cc);
@@ -805,6 +831,14 @@ namespace Forja3D.EditorTools
             g.AddComponent<Forja3DGoal>();
         }
 
+        // Si un modelo llega tumbado (su eje más largo no es el vertical), lo pone de pie
+        static void Enderezar(GameObject g)
+        {
+            var b = Forja3DImporter.Limites(g);
+            if (b.size.y >= b.size.x * 0.9f && b.size.y >= b.size.z * 0.9f) return;
+            g.transform.rotation = (b.size.x > b.size.z ? Quaternion.Euler(0, 0, 90) : Quaternion.Euler(90, 0, 0)) * g.transform.rotation;
+        }
+
         static GameObject Decoracion(Simbolo s, float c, string id, Mesh[] rocas, Material matRoca, System.Random rnd)
         {
             // T y R usan los modelos "arbol" y "roca" del proyecto si existen
@@ -813,12 +847,23 @@ namespace Forja3D.EditorTools
             if (g)
             {
                 // Ajusta el modelo generado al tamaño de la celda
+                if (s.tipo == "arbol")
+                {
+                    Enderezar(g);
+                    AjustarAltura(g, (5f + (float)rnd.NextDouble() * 2.5f) * Mathf.Max(0.2f, s.escala));
+                    // Colisión solo en el tronco (las ramas no bloquean el paso)
+                    foreach (var cc in g.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
+                    var raiz = new GameObject("Arbol"); g.transform.SetParent(raiz.transform, true);
+                    var bt = Forja3DImporter.Limites(g); g.transform.position -= new Vector3(bt.center.x, bt.min.y, bt.center.z);
+                    var tronco = raiz.AddComponent<CapsuleCollider>(); tronco.radius = 0.4f; tronco.height = 3f; tronco.center = Vector3.up * 1.5f;
+                    return raiz;
+                }
                 var b = Forja3DImporter.Limites(g);
                 float lado = Mathf.Max(b.size.x, b.size.z, 0.01f);
-                float esc = c * 0.9f / lado * Mathf.Max(0.2f, s.escala);
-                if (s.tipo == "arbol") esc = Mathf.Max(esc, 3.5f / Mathf.Max(b.size.y, 0.01f));
-                g.transform.localScale *= esc;
-                return g;
+                g.transform.localScale *= c * 0.9f / lado * Mathf.Max(0.2f, s.escala);
+                var b2 = Forja3DImporter.Limites(g); g.transform.position -= new Vector3(b2.center.x, b2.min.y, b2.center.z);
+                var envoltura = new GameObject(s.tipo == "roca" ? "Roca" : "Decoracion"); g.transform.SetParent(envoltura.transform, true);
+                return envoltura;
             }
             g = new GameObject(s.tipo == "roca" ? "Roca" : "Arbol");
             if (s.tipo == "roca")

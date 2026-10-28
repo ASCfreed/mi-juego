@@ -10,6 +10,7 @@
 //   · CORRER: esprint, gasta estamina; se apaga al soltar el joystick.
 using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 
 // EXPANSIÓN FUTURA: nuevas armas = otro valor de alcance/daño/velocidad (ScriptableObject por arma);
 // en PC con mando se puede añadir "fijar objetivo" (lock-on) con el stick derecho pulsado.
@@ -53,6 +54,7 @@ namespace Forja3D
         int pasoCombo;
         float finCombo;
         Vector3 empuje;
+        Vector3 ultimoSeguro; float fueraDesde = -1f, proximoChequeo;
 
         void Awake()
         {
@@ -145,7 +147,8 @@ namespace Forja3D
             if (cc.isGrounded && vy < 0) vy = -2f;
             if (libre && !atacando && !esquivando && !Cubriendo && cc.isGrounded && Forja3DInput.Saltar) { vy = fuerzaSalto; Forja3DAnim.Trigger(anim, "Jump"); Forja3DAudio.Sonar("esquiva", transform.position, 0.4f); }
             vy += gravedad * Time.deltaTime;
-            empuje = Vector3.MoveTowards(empuje, Vector3.zero, 14f * Time.deltaTime);
+            empuje = Vector3.ClampMagnitude(Vector3.MoveTowards(empuje, Vector3.zero, 14f * Time.deltaTime), 7f);
+            empuje.y = 0f;
             if (!esquivando) cc.Move((dir.normalized * vel + empuje + Vector3.up * vy) * Time.deltaTime);
 
             // ── Estamina ──
@@ -162,7 +165,29 @@ namespace Forja3D
             Forja3DAnim.Float(anim, "Speed", velAnim);
             Forja3DAnim.Bool(anim, "Grounded", cc.isGrounded);
 
-            if (transform.position.y < -30f && vida) vida.Danio(999); // cayó al vacío
+            VigilarLimites();
+        }
+
+        // Red de seguridad: recuerda el último punto pisable (sobre el NavMesh) y, si un golpe o un choque
+        // deja a Dante fuera de la zona jugable (encima de un muro, fuera del mapa o cayendo), lo devuelve allí.
+        void VigilarLimites()
+        {
+            if (Time.time < proximoChequeo) return;
+            proximoChequeo = Time.time + 0.2f;
+            bool enSuelo = NavMesh.SamplePosition(transform.position, out var hit, 0.9f, NavMesh.AllAreas);
+            if (enSuelo && cc.isGrounded) { ultimoSeguro = hit.position; fueraDesde = -1f; return; }
+            if (ultimoSeguro == Vector3.zero) { ultimoSeguro = transform.position; return; }
+            if (fueraDesde < 0f) fueraDesde = Time.time;
+            bool cayendo = transform.position.y < ultimoSeguro.y - 4f;
+            if (cayendo || Time.time - fueraDesde > 1.2f) Reubicar(ultimoSeguro);
+        }
+
+        void Reubicar(Vector3 punto)
+        {
+            cc.enabled = false;
+            transform.position = punto + Vector3.up * 0.1f;
+            cc.enabled = true;
+            vy = 0f; empuje = Vector3.zero; fueraDesde = -1f;
         }
 
         void Gastar(float cantidad, bool golpe = true)

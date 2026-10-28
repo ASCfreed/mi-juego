@@ -238,9 +238,11 @@ namespace Forja3D.EditorTools
                 var vuelta = st.AddTransition(loco); vuelta.hasExitTime = true; vuelta.duration = 0.15f;
                 // Reacciones y esquivas cortas: vuelven antes a la locomoción para que el control sea ágil
                 vuelta.exitTime = trigger == "Hit" ? 0.6f : trigger == "Dodge" ? 0.8f : trigger.StartsWith("Combo") || trigger == "Attack" ? 0.75f : 0.9f;
-                if (trigger == "Dodge" || trigger == "Hit") st.speed = trigger == "Dodge" ? 1.25f : 1.3f;
+                // Ajusta la velocidad del clip a la duración del movimiento en el juego (así el golpe coincide con la animación)
+                var duracion = trigger switch { "Attack" => 0.5f, "Combo2" => 0.5f, "Combo3" => 0.7f, "Dodge" => 0.55f, "Hit" => 0.45f, "KnockDown" => 1.4f, _ => 0f };
+                if (duracion > 0f && clip.length > 0.05f) st.speed = Mathf.Clamp(clip.length / duracion, 0.6f, 3f);
             }
-            if (humanoide) CapaTorso(ctrl, carpeta, Buscar("accion_138"), Buscar("accion_147"));
+            if (humanoide) CapaTorso(ctrl, carpeta, Buscar("accion_147", "accion_138"), Buscar("accion_147"));
             var muerte = Buscar("accion_189", "muerte", "dead");
             if (muerte)
             {
@@ -270,7 +272,7 @@ namespace Forja3D.EditorTools
             ctrl.AddParameter("Parry", AnimatorControllerParameterType.Trigger);
             // Pose de guardia: el clip de bloqueo se congela en este punto (0-1)
             var ps = ctrl.parameters.ToList();
-            ps.Add(new AnimatorControllerParameter { name = "PoseGuardia", type = AnimatorControllerParameterType.Float, defaultFloat = 0.42f });
+            ps.Add(new AnimatorControllerParameter { name = "PoseGuardia", type = AnimatorControllerParameterType.Float, defaultFloat = 0.3f });
             ctrl.parameters = ps.ToArray();
 
             ctrl.AddLayer("Torso");
@@ -326,6 +328,22 @@ namespace Forja3D.EditorTools
 
         bool EsNuestro => assetPath.StartsWith(Forja3DImporter.Raiz) && assetPath.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase);
 
+        // Materiales de Meshy/Tripo: textura de color + normal; sin mapa metálico (con poca luz se veían negros/planos)
+        void OnPostprocessMaterial(Material m)
+        {
+            if (!EsNuestro || m == null) return;
+            if (m.HasProperty("_MetallicGlossMap")) m.SetTexture("_MetallicGlossMap", null);
+            m.DisableKeyword("_METALLICGLOSSMAP");
+            if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f);
+            if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", 0.22f);
+            if (m.HasProperty("_GlossMapScale")) m.SetFloat("_GlossMapScale", 0.22f);
+            if (m.HasProperty("_Color")) { var c = m.color; m.color = new Color(1, 1, 1, c.a <= 0.01f ? 1f : c.a); }
+            if (m.HasProperty("_MainTex") && m.mainTexture == null && m.HasProperty("_BaseMap")) m.mainTexture = m.GetTexture("_BaseMap");
+            if (m.HasProperty("_Mode")) { m.SetFloat("_Mode", 0); m.SetOverrideTag("RenderType", ""); m.renderQueue = -1; m.DisableKeyword("_ALPHABLEND_ON"); m.DisableKeyword("_ALPHAPREMULTIPLY_ON"); m.DisableKeyword("_ALPHATEST_ON");
+                if (m.HasProperty("_SrcBlend")) m.SetFloat("_SrcBlend", 1); if (m.HasProperty("_DstBlend")) m.SetFloat("_DstBlend", 0); if (m.HasProperty("_ZWrite")) m.SetFloat("_ZWrite", 1); }
+            m.enableInstancing = true;
+        }
+
         void OnPreprocessModel()
         {
             if (!EsNuestro) return;
@@ -335,6 +353,7 @@ namespace Forja3D.EditorTools
             {
                 mi.animationType = ModelImporterAnimationType.None; mi.importAnimation = false;
                 mi.isReadable = false;
+                mi.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
                 return;
             }
             mi.animationType = Forja3DImporter.EsTripo(m) ? ModelImporterAnimationType.Generic : ModelImporterAnimationType.Human;
