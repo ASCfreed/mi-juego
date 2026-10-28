@@ -32,7 +32,7 @@
       "tipo": "jefe",
       "modelo": "minos",
       "vida": 30,
-      "escala": 2.4,
+      "escala": 1,
       "color": "",
       "nombre": "Minos",
       "seguir": false,

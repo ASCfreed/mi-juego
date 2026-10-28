@@ -690,6 +690,12 @@ namespace Forja3D.EditorTools
             g.transform.position = p; g.transform.localScale *= esc;
             var cc = g.GetComponent<CharacterController>();
             float alto = cc ? cc.height : 2f, radio = cc ? cc.radius : 0.4f;
+            if (!cc)
+            {
+                // Sin CharacterController (jefes Tripo): la cápsula se ajusta al tamaño real del modelo
+                var lim = Forja3DImporter.Limites(g); float k = Mathf.Max(0.0001f, g.transform.lossyScale.y);
+                if (lim.size.y > 0.1f) { alto = lim.size.y / k; radio = Mathf.Clamp(Mathf.Min(lim.size.x, lim.size.z) / k * 0.3f, 0.3f, alto * 0.25f); }
+            }
             if (cc) UnityEngine.Object.DestroyImmediate(cc);
             var col = g.AddComponent<CapsuleCollider>(); col.height = alto; col.radius = radio; col.center = Vector3.up * alto / 2f;
             var ag = g.AddComponent<NavMeshAgent>(); ag.height = alto; ag.radius = radio;
@@ -703,7 +709,9 @@ namespace Forja3D.EditorTools
             if (jefe)
             {
                 e.esJefe = true; e.danio = 2; e.velocidad = fiera ? 3.2f : 2.4f; e.enfriamiento = 1.6f;
-                e.radioDeteccion = 14f; e.radioAtaque = 1.5f * esc; e.radioPatrulla = 2f; e.probImparable = 0.25f;
+                // El alcance crece con el tamaño real del modelo (jefes de 2,5-3 m)
+                float altoReal = Forja3DImporter.Limites(g).size.y;
+                e.radioDeteccion = 14f; e.radioAtaque = Mathf.Max(1.5f * esc, altoReal * 0.55f); e.radioPatrulla = 2f; e.probImparable = 0.25f;
             }
         }
 

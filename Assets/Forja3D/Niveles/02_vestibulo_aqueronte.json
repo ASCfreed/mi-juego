@@ -44,7 +44,7 @@
       "tipo": "jefe",
       "modelo": "caron",
       "vida": 26,
-      "escala": 2.2,
+      "escala": 1,
       "color": "",
       "nombre": "Carón",
       "seguir": false,
