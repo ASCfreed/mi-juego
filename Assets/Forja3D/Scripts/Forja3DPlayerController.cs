@@ -31,6 +31,11 @@ namespace Forja3D
         public float alcanceAtaque = 1.35f; // espada; la hoz llega un 25 % más lejos
         public int danioAtaque = 1;
         public float ventanaParry = 0.22f;
+        // Mejoras del árbol de virtudes (Forja3DProgreso)
+        [HideInInspector] public int tercerGolpe = 2, multGracia = 3;
+        [HideInInspector] public float invulnerableEsquiva = 0.42f;
+        [HideInInspector] public bool robaVida;
+        int golpesCerteros;
 
         [Header("Estamina")]
         public float estaminaMaxima = 100f;
@@ -49,7 +54,13 @@ namespace Forja3D
             var nueva = BuscarHijo("ArmaRecompensa"); if (!nueva) return;
             var vieja = BuscarHijo("Arma"); if (vieja) Destroy(vieja.gameObject);
             nueva.gameObject.SetActive(true); nueva.name = "Arma";
+            // La hoz desaparece de las manos del jefe caído: ahora es de Dante
+            foreach (var e in FindObjectsByType<Forja3DEnemy>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (e && e.Muerto)
+                    foreach (var t in e.GetComponentsInChildren<Transform>(true))
+                        if (t.name == "ArmaJefe") { Forja3DFX.Chispas(t.position, 30); Destroy(t.gameObject); }
             alcanceAtaque *= 1.25f; // un arma de asta llega más lejos
+            Forja3DProgreso.EscalarAlcanceBase(1.25f);
             // Con la hoz se cubre con el asta: el escudo se descarta
             var escudo = BuscarHijo("Escudo"); if (escudo) Destroy(escudo.gameObject);
             Forja3DFX.Chispas(nueva.position, 40);
@@ -92,6 +103,7 @@ namespace Forja3D
 
         void Start()
         {
+            Forja3DProgreso.Aplicar(this);
             if (vida)
             {
                 vida.Interceptar = Interceptar;
@@ -342,7 +354,7 @@ namespace Forja3D
                 if (!h || h.esJugador || h.Muerto || !golpeados.Add(h)) continue;
                 var e = h.GetComponent<Forja3DEnemy>();
                 bool gracia = e && e.Aturdido;
-                int danio = danioAtaque * (fuerte ? 2 : 1) * (gracia ? 3 : 1);
+                int danio = danioAtaque * (fuerte ? tercerGolpe : 1) * (gracia ? multGracia : 1);
                 var dir = h.transform.position - transform.position; dir.y = 0; dir.Normalize();
                 if (!h.Danio(danio, transform)) continue;
                 acerto = true;
@@ -350,7 +362,8 @@ namespace Forja3D
                 Forja3DFX.Sangre(punto, dir + transform.right * (pasoCombo == 2 ? -0.8f : 0.8f), gracia ? 40 : fuerte ? 26 : 16);
                 Forja3DAudio.Sonar(gracia ? "golpe_gracia" : "golpe_carne", punto, fuerte || gracia ? 1f : 0.85f);
                 if (e) e.Empujar(dir * (gracia ? 6f : fuerte ? 4.5f : 1.8f), fuerte || gracia);
-                if (gracia) Forja3DGameManager.Mensaje("¡GOLPE DE GRACIA!");
+                if (gracia) { Forja3DGameManager.Mensaje("¡GOLPE DE GRACIA!"); Forja3DProgreso.Ganar(8, "gracia"); }
+                if (robaVida && ++golpesCerteros % 8 == 0 && vida) vida.Curar(1);
             }
             if (acerto)
             {
@@ -367,7 +380,7 @@ namespace Forja3D
         {
             esquivando = true;
             Gastar(costoEsquiva);
-            if (vida) vida.InvulnerableHasta = Time.time + 0.42f;
+            if (vida) vida.InvulnerableHasta = Time.time + invulnerableEsquiva;
             Forja3DAudio.Sonar("esquiva", transform.position + Vector3.up * 0.5f, 0.8f);
             bool clip = Forja3DAnim.Tiene(anim, "Dodge", AnimatorControllerParameterType.Trigger);
             if (clip) Forja3DAnim.Trigger(anim, "Dodge");
@@ -418,6 +431,7 @@ namespace Forja3D
                 Forja3DAudio.Sonar("parry", punto, 1f, 0.04f);
                 Estamina = Mathf.Min(estaminaMaxima, Estamina + 20f);
                 Forja3DGameManager.Mensaje("¡PARRY!");
+                Forja3DProgreso.Ganar(5, "parry");
                 return 0;
             }
 

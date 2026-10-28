@@ -453,6 +453,7 @@ namespace Forja3D
 
         void Morir()
         {
+            Forja3DProgreso.Ganar(esJefe ? 150 : voz == "fiera" ? 30 : 10, esJefe ? "jefe" : "alma");
             StopAllCoroutines();
             SoltarTurno();
             Activos.Remove(this);

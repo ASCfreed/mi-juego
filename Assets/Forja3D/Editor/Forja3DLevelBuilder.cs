@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; }
     [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; }
     [Serializable]
     public class JuegoDef
@@ -43,6 +43,10 @@ namespace Forja3D.EditorTools
         public string recompensa_arma;   // p. ej. "hoz": sustituye al arma al vencer a todos los jefes
         public string recompensa_nombre; // texto: "LA HOZ DE LA MUERTE"
         public Linea[] recompensa_dialogo;
+        public string meta_modelo;      // "barca": la meta es la barca en la orilla (sin puerta)
+        public string transicion;       // texto del pergamino al terminar el nivel: hacia dónde va Dante
+        public string capitulo;         // encabezado del pergamino al empezar ("Canto I")
+        public Linea[] narracion;       // texto del pergamino al empezar (si no, se usan las líneas del narrador de la intro)
     }
 
     public static class Forja3DLevelBuilder
@@ -276,7 +280,7 @@ namespace Forja3D.EditorTools
                     }
                 }
             if (inicio == null) throw new Exception($"Nivel {id}: falta la P del jugador.");
-            if (meta != null) Meta(meta.Value, c, dinamicos, id, inicio.Value, rocas, matRoca);
+            if (meta != null) Meta(meta.Value, c, dinamicos, id, inicio.Value, rocas, matRoca, n.meta_modelo);
             if (meta == null) throw new Exception($"Nivel {id}: falta la M de la meta.");
 
             // Validación: debe existir camino del jugador a la meta
@@ -300,6 +304,7 @@ namespace Forja3D.EditorTools
             gm.intro = n.intro; gm.salida = n.salida;
             gm.objetivo = n.objetivo == "enemigos" ? Objetivo.Enemigos : n.objetivo == "monedas" ? Objetivo.Monedas : n.objetivo == "jefe" ? Objetivo.Jefe : n.objetivo == "dialogos" ? Objetivo.Dialogos : Objetivo.Meta;
             gm.recompensaDialogo = n.recompensa_dialogo;
+            gm.capitulo = n.capitulo; gm.narracion = n.narracion; gm.transicion = n.transicion;
 
             string ruta = $"{RutaGenerado}/Escenas/{id}.unity";
             EditorSceneManager.SaveScene(escena, ruta);
@@ -732,8 +737,16 @@ namespace Forja3D.EditorTools
             // Hoz/guadaña: arma de asta (≈1,9 m), la hoja es el extremo ANCHO y lejano; se empuña por el mango
             bool asta = modelo.Contains("hoz") || modelo.Contains("guadana") || modelo.Contains("lanza");
             var anim = portador.GetComponentInChildren<Animator>();
-            var mano = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
-            var antebrazo = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightLowerArm) : null;
+            bool humano = anim && anim.isHuman;
+            var mano = humano ? anim.GetBoneTransform(HumanBodyBones.RightHand) : BuscarHueso(portador.transform, "R_Hand", "RightHand", "hand_r", "Hand_R", "mixamorig:RightHand");
+            var antebrazo = humano ? anim.GetBoneTransform(HumanBodyBones.RightLowerArm) : BuscarHueso(portador.transform, "R_Forearm", "RightForeArm", "lowerarm_r", "Forearm_R");
+            // Esqueletos de Tripo (genéricos): se coloca el arma en la pose de reposo del clip idle, no en la de
+            // referencia de Blender (que deja los brazos en posiciones raras)
+            if (!humano && anim && anim.runtimeAnimatorController)
+            {
+                var idle = anim.runtimeAnimatorController.animationClips.FirstOrDefault(c => c.name.ToLowerInvariant().Contains("idle"));
+                if (idle) idle.SampleAnimation(anim.gameObject, 0.1f);
+            }
             var arma = InstanciarModelo(modelo);
             if (!mano || !arma) { if (arma) UnityEngine.Object.DestroyImmediate(arma); Debug.LogWarning($"[Forja3D] No se pudo poner el arma '{modelo}'."); return null; }
             foreach (var c in arma.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(c);
@@ -765,13 +778,7 @@ namespace Forja3D.EditorTools
             bool empunaduraEnMin = guarda < B / 2;                // la empuñadura está en el extremo más cercano a la guarda
             float tGuarda = (guarda + 0.5f) / B;
             float tAgarre = empunaduraEnMin ? tGuarda * 0.5f : 1f - (1f - tGuarda) * 0.5f;
-            if (asta)
-            {
-                // La hoja (lo más ancho) va lejos de la mano: se agarra a un 30 % desde el otro extremo
-                bool hojaEnMax = guarda >= B / 2;
-                tAgarre = hojaEnMax ? 0.3f : 0.7f;
-                empunaduraEnMin = hojaEnMax;
-            }
+            if (asta) return Asta(portador, arma, pts, min, largo, eje, mano, antebrazo, humano, nombre);
             var agarre = centro; agarre[eje] = min[eje] + tAgarre * largo;
             var haciaPunta = Vector3.zero; haciaPunta[eje] = empunaduraEnMin ? 1f : -1f;
 
@@ -786,6 +793,58 @@ namespace Forja3D.EditorTools
             // Puño: un poco más allá del hueso de la mano, en la dirección del brazo
             var dirBrazo = antebrazo ? (mano.position - antebrazo.position).normalized : portador.transform.right;
             var puno = mano.position + dirBrazo * 0.085f * escPortador - portador.transform.up * 0.03f * escPortador;
+            arma.transform.position += puno - arma.transform.TransformPoint(agarre);
+            arma.transform.SetParent(mano, true);
+            arma.name = nombre;
+            GameObjectUtility.SetStaticEditorFlags(arma, (StaticEditorFlags)0);
+            return arma;
+        }
+
+        static Transform BuscarHueso(Transform raiz, params string[] nombres)
+        {
+            foreach (var t in raiz.GetComponentsInChildren<Transform>(true))
+                foreach (var n in nombres) if (string.Equals(t.name, n, StringComparison.OrdinalIgnoreCase)) return t;
+            return null;
+        }
+
+        // Arma de asta (hoz): el eje largo no basta, porque la hoja curva ensancha la caja. Se localiza el asta
+        // (puntos centrales a lo largo del eje), el extremo de la hoja (el más disperso) y hacia qué lado sale
+        // la hoja; luego se orienta con dos ejes: el asta en la dirección del puño y la hoja hacia fuera.
+        static GameObject Asta(GameObject portador, GameObject arma, List<Vector3> pts, Vector3 min, float largo, int eje, Transform mano, Transform antebrazo, bool humano, string nombre)
+        {
+            const int B = 20;
+            var suma = new Vector3[B]; var n = new int[B]; var disp = new float[B];
+            int Bin(Vector3 q) => Mathf.Clamp((int)((q[eje] - min[eje]) / largo * B), 0, B - 1);
+            foreach (var q in pts) { int i = Bin(q); suma[i] += q; n[i]++; }
+            var cen = new Vector3[B]; for (int i = 0; i < B; i++) cen[i] = n[i] > 0 ? suma[i] / n[i] : Vector3.zero;
+            foreach (var q in pts) { int i = Bin(q); var d = q - cen[i]; d[eje] = 0; disp[i] = Mathf.Max(disp[i], d.magnitude); }
+            float Disp(int a, int b) { float m = 0; for (int i = a; i <= b; i++) m = Mathf.Max(m, disp[i]); return m; }
+            bool hojaEnMax = Disp(B - 5, B - 1) >= Disp(0, 4);
+            int Idx(int k) => hojaEnMax ? k : B - 1 - k;           // k = 0 en el extremo del mango
+            Vector3 Cen(int k) { var c = cen[Idx(k)]; return n[Idx(k)] > 0 ? c : cen[Idx(Mathf.Min(k + 1, B - 1))]; }
+            var punta = Cen(0);                                     // extremo del mango
+            var alto = Cen(13);                                     // asta, por debajo de la hoja
+            var dirAsta = (alto - punta).normalized;
+            var agarre = punta + (alto - punta) * (0.3f / 0.65f);   // a un 30 % desde el extremo
+            var hoja = Vector3.zero; int nh = 0;
+            foreach (var q in pts) { int k = hojaEnMax ? Bin(q) : B - 1 - Bin(q); if (k >= 16) { hoja += q; nh++; } }
+            hoja = nh > 0 ? hoja / nh : alto;
+            var lado = Vector3.ProjectOnPlane(hoja - alto, dirAsta);
+            if (lado.sqrMagnitude < 1e-6f) lado = Vector3.Cross(dirAsta, Vector3.right);
+
+            // Tamaño: 1,9 m para Dante (1,8 m); para un jefe, casi su altura
+            float altoPortador = Forja3DImporter.Limites(portador).size.y;
+            float objetivo = humano ? 1.9f * portador.transform.lossyScale.y : altoPortador * 0.95f;
+            arma.transform.localScale = Vector3.one * (objetivo / largo);
+            // Humanoide en T-pose: el puño cierra a lo largo del pulgar (hacia delante) y el dorso mira arriba:
+            // el asta sale hacia delante y la hoja hacia arriba. Jefe en pose idle: asta casi vertical, hoja al frente.
+            var f = portador.transform.forward; var u = portador.transform.up;
+            var astaW = humano ? f : (u + f * 0.25f).normalized;
+            var hojaW = humano ? u : f;
+            arma.transform.rotation = Quaternion.LookRotation(astaW, hojaW) * Quaternion.Inverse(Quaternion.LookRotation(dirAsta, lado));
+            float esc = humano ? portador.transform.lossyScale.y : altoPortador / 1.8f;
+            var dirBrazo = antebrazo ? (mano.position - antebrazo.position).normalized : portador.transform.right;
+            var puno = mano.position + dirBrazo * 0.085f * esc - (humano ? u * 0.03f * esc : Vector3.zero);
             arma.transform.position += puno - arma.transform.TransformPoint(agarre);
             arma.transform.SetParent(mano, true);
             arma.name = nombre;
@@ -845,6 +904,8 @@ namespace Forja3D.EditorTools
             string m = (s.modelo ?? "").ToLowerInvariant();
             bool fiera = m.Contains("pantera") || m.Contains("leon") || m.Contains("lob") || m.Contains("perro") || m.Contains("cerbero");
             e.voz = !string.IsNullOrEmpty(s.voz) ? s.voz : fiera ? "fiera" : jefe ? "jefe" : "condenado";
+            // Arma en la mano del enemigo (la Muerte lleva su hoz)
+            if (!string.IsNullOrEmpty(s.arma) && Forja3DImporter.RutaPrefab(s.arma)) Arma(g, s.arma, "ArmaJefe");
             // Aura del pecado (campo "aura" del nivel, o el color de cada fiera por defecto)
             string auraHex = !string.IsNullOrEmpty(s.aura) ? s.aura : m.Contains("pantera") ? "#ff2a8a" : m.Contains("leon") ? "#ffb62e" : m.Contains("lob") ? "#9b3cff" : "";
             if (!string.IsNullOrEmpty(auraHex)) Aura(g, Hex(auraHex, Color.white), id, AlturaDe(s.modelo, jefe ? "jefe" : "enemigo", fiera) * esc);
@@ -930,7 +991,8 @@ namespace Forja3D.EditorTools
             else { var col = g.AddComponent<CapsuleCollider>(); col.height = alto; col.radius = radio; col.center = Vector3.up * alto / 2f; }
             if (s.seguir) { var ag = g.AddComponent<NavMeshAgent>(); ag.height = alto; ag.radius = radio; ag.speed = 3.2f; ag.stoppingDistance = 2f; }
             var npc = g.AddComponent<Forja3DNPC>();
-            npc.nombre = s.nombre ?? ""; npc.dialogo = s.dialogo; npc.seguir = s.seguir; npc.clave = s.clave;
+            npc.nombre = s.nombre ?? ""; npc.dialogo = s.dialogo; npc.seguir = s.seguir; npc.clave = s.clave; npc.desvanecer = s.desvanecer;
+            if (s.clave || s.desvanecer) npc.distancia = 4f;
         }
 
         static void Moneda(Vector3 p, Transform padre, string id)
@@ -947,8 +1009,30 @@ namespace Forja3D.EditorTools
         }
 
         // Meta: la Puerta (modelo "puerta") con un resplandor; sin modelo, un arco de roca procedural
-        static void Meta(Vector3 p, float c, Transform padre, string id, Vector3 mirarA, Mesh[] rocas, Material matRoca)
+        static void Meta(Vector3 p, float c, Transform padre, string id, Vector3 mirarA, Mesh[] rocas, Material matRoca, string modeloMeta = null)
         {
+            // Meta con otro modelo (p. ej. la barca de Carón en la orilla): sin puerta ni portal
+            if (!string.IsNullOrEmpty(modeloMeta) && modeloMeta != "puerta" && Forja3DImporter.RutaPrefab(modeloMeta))
+            {
+                var gm = new GameObject("Meta"); gm.transform.SetParent(padre); gm.transform.position = p;
+                var trig = gm.AddComponent<BoxCollider>(); trig.isTrigger = true; trig.size = new Vector3(c * 1.2f, 3f, c * 1.2f); trig.center = Vector3.up * 1.5f;
+                var mod = InstanciarModelo(modeloMeta);
+                foreach (var cc in mod.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
+                mod.transform.SetParent(gm.transform, false);
+                var lb = Forja3DImporter.Limites(mod);
+                float largoMod = Mathf.Max(lb.size.x, lb.size.z);
+                mod.transform.localScale *= c * 2.2f / Mathf.Max(0.01f, largoMod);
+                // A lo largo de la orilla (eje X del mapa) y medio metido en el agua (hacia el sur)
+                lb = Forja3DImporter.Limites(mod);
+                if (lb.size.z > lb.size.x) mod.transform.Rotate(0, 90, 0, Space.World);
+                lb = Forja3DImporter.Limites(mod);
+                mod.transform.position += new Vector3(p.x - lb.center.x, p.y - lb.min.y - 0.25f, p.z - c * 0.55f - lb.center.z);
+                var farol = new GameObject("Farol").AddComponent<Light>();
+                farol.transform.SetParent(gm.transform, false); farol.transform.localPosition = Vector3.up * 2.2f;
+                farol.type = LightType.Point; farol.color = new Color(1f, 0.55f, 0.25f); farol.range = 8f; farol.intensity = 1.8f;
+                gm.AddComponent<Forja3DGoal>();
+                return;
+            }
             var g = new GameObject("Meta"); g.transform.SetParent(padre); g.transform.position = p;
             var hacia = mirarA - p; hacia.y = 0;
             if (hacia.sqrMagnitude > 0.01f) g.transform.rotation = Quaternion.LookRotation(-hacia.normalized);

@@ -28,7 +28,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "J",
@@ -43,7 +45,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": "hoz"
     },
     {
       "simbolo": "V",
@@ -67,7 +71,9 @@
       "voz": "",
       "aura": "",
       "fantasma": true,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     }
   ],
   "jugador": {
@@ -119,6 +125,10 @@
       "texto": "Tómala, pues. Pero no es la hoz la que te sacará de aquí, sino el camino."
     }
   ],
+  "capitulo": "Canto III",
+  "narracion": [],
+  "transicion": "Pasada la puerta, el aire se llenó de suspiros bajo un cielo sin estrellas. Corrían allí, detrás de una bandera que nunca se detiene, los que vivieron sin infamia y sin alabanza.\n\nMás allá se abría una ribera, y en ella esperaban en silencio las almas, mirando el agua oscura por donde llegaría un barquero viejo de ojos como brasas.",
+  "meta_modelo": "",
   "terreno": {
     "tipo": "piedra",
     "colinas": 0.7,

@@ -65,6 +65,9 @@ namespace Forja3D
             pista = Forja3DGameManager.Texto(caja.transform, "▼", 30, TextAnchor.LowerRight);
             pista.rectTransform.offsetMin = new Vector2(40, 15); pista.rectTransform.offsetMax = new Vector2(-30, -15);
             pista.color = new Color(1, 1, 1, 0.6f);
+            // Letra de libro antiguo (la misma del pergamino); el nombre en mayúsculas pequeñas
+            nombre.font = Forja3DPergamino.Fuente(); nombre.fontStyle = FontStyle.Normal; nombre.fontSize = 44;
+            texto.font = Forja3DPergamino.Fuente(); texto.fontSize = 40;
             panel.SetActive(false);
         }
 

@@ -9,7 +9,7 @@
     "#.R....E.......E...#",
     "#......R....K......#",
     "#..R..........R...M#",
-    "#~~~~~~~~~~~~~~~~B~#",
+    "#~~~~~~~~~~~~~~~~~~#",
     "#~~~~~~~~~~~~~~~~~~#",
     "####################"
   ],
@@ -27,7 +27,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "K",
@@ -42,22 +44,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
-    },
-    {
-      "simbolo": "B",
-      "tipo": "decoracion",
-      "modelo": "barca",
-      "vida": 2,
-      "escala": 2.5,
-      "color": "",
-      "nombre": "",
-      "seguir": false,
-      "dialogo": [],
-      "voz": "",
-      "aura": "",
-      "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "V",
@@ -77,7 +66,9 @@
       "voz": "",
       "aura": "",
       "fantasma": true,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     }
   ],
   "jugador": {
@@ -120,6 +111,10 @@
   "recompensa_arma": "",
   "recompensa_nombre": "",
   "recompensa_dialogo": [],
+  "capitulo": "Canto III",
+  "narracion": [],
+  "transicion": "La barca cruzó el agua oscura. Antes de llegar a la otra orilla, otra multitud se juntaba ya en esta.\n\nCuando Dante volvió en sí estaba al borde del primer círculo: un valle hondo donde no se oía llanto, solo suspiros que hacían temblar el aire eterno. Allí moran los que no conocieron la fe… y, entre ellos, Virgilio.",
+  "meta_modelo": "barca",
   "terreno": {
     "tipo": "piedra",
     "colinas": 0.6,

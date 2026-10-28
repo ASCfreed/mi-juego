@@ -28,7 +28,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "J",
@@ -43,7 +45,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "V",
@@ -75,7 +79,9 @@
       "voz": "",
       "aura": "",
       "fantasma": true,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "H",
@@ -88,18 +94,36 @@
       "seguir": false,
       "dialogo": [
         {
+          "quien": "Virgilio",
+          "texto": "Mira a aquel que lleva la espada en la mano y viene delante de los otros como señor: es Homero, poeta soberano."
+        },
+        {
+          "quien": "Homero",
+          "texto": "Ménin áeide, theá, Peleïádeo Achiléos…"
+        },
+        {
+          "quien": "Homero",
+          "texto": "Canta, oh diosa, la cólera de Aquiles, hijo de Peleo; la cólera funesta que causó a los aqueos dolores sin cuento y precipitó al Hades tantas almas valerosas de héroes."
+        },
+        {
           "quien": "Homero",
           "texto": "Honrad al altísimo poeta: su sombra, que se había ido, vuelve."
         },
         {
           "quien": "",
-          "texto": "Y me hicieron todavía más honor, pues me pusieron en su círculo, y fui el sexto entre tanto saber."
+          "texto": "Y me hicieron todavía más honor, pues me acogieron en su compañía, y fui el sexto entre tanto saber."
+        },
+        {
+          "quien": "",
+          "texto": "Dicho esto, la sombra del poeta se deshizo en luz y volvió a su castillo de siete muros."
         }
       ],
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": true,
+      "arma": ""
     }
   ],
   "jugador": {
@@ -130,6 +154,10 @@
   "recompensa_arma": "",
   "recompensa_nombre": "",
   "recompensa_dialogo": [],
+  "capitulo": "Cantos IV y V",
+  "narracion": [],
+  "transicion": "Minos se enroscó la cola para dictar sentencia, pero no pudo detenerlos.\n\nBajaron al segundo círculo, donde toda luz calla. Allí brama un viento infernal que nunca descansa y arrastra a los espíritus en remolinos, como a los estorninos en invierno.",
+  "meta_modelo": "",
   "terreno": {
     "tipo": "pasto",
     "colinas": 0.4,

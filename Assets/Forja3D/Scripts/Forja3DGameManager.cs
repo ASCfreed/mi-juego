@@ -15,10 +15,13 @@ namespace Forja3D
         public Linea[] intro;   // narración/diálogo al empezar el nivel
         public Linea[] salida;  // al completar el nivel, antes de pasar al siguiente
         public Linea[] recompensaDialogo; // al vencer al último jefe, si el nivel da un arma nueva
+        public string capitulo;     // encabezado del pergamino inicial ("Canto I")
+        public Linea[] narracion;   // pergamino inicial (si falta: las líneas del narrador de la intro)
+        [TextArea] public string transicion; // pergamino final: hacia dónde va Dante
 
         public static bool Terminado { get; private set; }
         // Bloquea al jugador y a los enemigos (fin del nivel o diálogo abierto)
-        public static bool Bloqueado => Terminado || Forja3DDialogue.Activo;
+        public static bool Bloqueado => Terminado || Forja3DDialogue.Activo || Forja3DPergamino.Activo;
         static Forja3DGameManager inst;
         static int enemigos, derrotados, monedas, recogidas, jefes, jefesDerrotados, claves, clavesOidas;
         static System.Collections.Generic.List<Forja3DHealth> vidasJefe = new System.Collections.Generic.List<Forja3DHealth>();
@@ -86,10 +89,25 @@ namespace Forja3D
             var p = GameObject.FindWithTag("Player");
             if (p) { jugador = p.GetComponent<Forja3DHealth>(); controlJugador = p.GetComponent<Forja3DPlayerController>(); if (jugador) jugador.AlMorir += Perder; }
             PlayerPrefs.SetInt(Forja3DTitle.ClaveProgreso, Mathf.Max(1, SceneManager.GetActiveScene().buildIndex));
-            Forja3DDialogue.Mostrar(intro, () => Aviso(titulo + ObjetivoTexto()));
+            Forja3DProgreso.NuevoNivel();
+            Forja3DProgreso.AlGanar += XPGanada;
+            // Narración en el pergamino; los personajes hablan después en la caja de diálogo
+            var narr = new System.Collections.Generic.List<string>(); var resto = new System.Collections.Generic.List<Linea>();
+            if (narracion != null && narracion.Length > 0) { foreach (var l in narracion) narr.Add(l.texto); if (intro != null) resto.AddRange(intro); }
+            else if (intro != null) foreach (var l in intro) { if (string.IsNullOrEmpty(l.quien)) narr.Add(l.texto.Replace(" / ", "\n")); else resto.Add(l); }
+            System.Action seguir = () => Forja3DDialogue.Mostrar(resto, () => Aviso(titulo + ObjetivoTexto()));
+            if (narr.Count > 0) Forja3DPergamino.Mostrar(string.IsNullOrEmpty(capitulo) ? titulo : capitulo + "\n<size=46>" + titulo + "</size>", string.Join("\n\n", narr), "— toca para comenzar —", seguir);
+            else seguir();
         }
 
-        void OnDestroy() { if (inst == this) inst = null; }
+        void XPGanada(int cantidad, string motivo)
+        {
+            if (!textoXP) return;
+            xpFlotante = $"+{cantidad} XP"; xpFlotanteHasta = Time.unscaledTime + 1.2f;
+        }
+        Text textoXP; string xpFlotante; float xpFlotanteHasta;
+
+        void OnDestroy() { if (inst == this) inst = null; Forja3DProgreso.AlGanar -= XPGanada; }
 
         string ObjetivoTexto() => objetivo switch
         {
@@ -135,6 +153,11 @@ namespace Forja3D
             vinetaAlfa = Mathf.MoveTowards(vinetaAlfa, jugador && jugador.Vida <= 1 && !jugador.Muerto ? 0.25f + 0.1f * Mathf.Sin(Time.time * 4f) : 0f, dt * 0.8f);
             vineta.color = new Color(0.6f, 0f, 0f, vinetaAlfa);
             var a = textoAviso.color; a.a = Mathf.Clamp01((avisoHasta - Time.unscaledTime) * 3f); textoAviso.color = a;
+            if (textoXP)
+            {
+                int d = Forja3DProgreso.Disponibles;
+                textoXP.text = $"XP {Forja3DProgreso.XP}" + (d > 0 ? $"   ·   {d} punto{(d > 1 ? "s" : "")} de virtud" : "") + (Time.unscaledTime < xpFlotanteHasta ? $"   <color=#ffd27a>{xpFlotante}</color>" : "");
+            }
         }
 
         static void Llenar(Image barra, Image retardo, float valor, float dt)
@@ -152,21 +175,32 @@ namespace Forja3D
             Forja3DDialogue.Mostrar(salida, PanelVictoria);
         }
 
+        // Fin del nivel: un pergamino cuenta hacia dónde sigue el viaje (en vez de un botón "siguiente")
         void PanelVictoria()
         {
             bool hayMas = SceneManager.GetActiveScene().buildIndex + 1 < SceneManager.sceneCountInBuildSettings;
             if (hayMas) PlayerPrefs.SetInt(Forja3DTitle.ClaveProgreso, SceneManager.GetActiveScene().buildIndex + 1);
+            Forja3DProgreso.Ganar(50, "nivel");
             PlayerPrefs.Save();
-            Forja3DAudio.Sonar("victoria", null, 0.8f, 0f);
-            MostrarFinal(hayMas ? "NIVEL COMPLETADO" : "FIN DE ESTA PARTE DEL VIAJE", hayMas ? "SIGUIENTE" : "VOLVER AL INICIO",
-                () => SceneManager.LoadScene(hayMas ? SceneManager.GetActiveScene().buildIndex + 1 : 0));
+            Forja3DAudio.Sonar("victoria", null, 0.6f, 0f);
+            string texto = !string.IsNullOrEmpty(transicion) ? transicion : hayMas ? "Y el camino siguió, hacia abajo, siempre hacia abajo." : "Aquí termina esta parte del viaje.";
+            string extra = $"Experiencia ganada en este canto: {Forja3DProgreso.XPEnEsteNivel}";
+            Forja3DPergamino.Mostrar(hayMas ? "Y siguieron su camino" : "Fin de esta parte del viaje", texto,
+                hayMas ? "— toca para seguir el viaje —" : "— toca para volver al inicio —",
+                () => SceneManager.LoadScene(hayMas ? SceneManager.GetActiveScene().buildIndex + 1 : 0), extra, true);
         }
 
         void Perder()
         {
             Terminado = true;
             Forja3DAudio.Sonar("derrota", null, 0.8f, 0f);
-            MostrarFinal("HAS CAÍDO", "REINTENTAR", () => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex));
+            StartCoroutine(PergaminoDerrota());
+        }
+        System.Collections.IEnumerator PergaminoDerrota()
+        {
+            yield return new WaitForSecondsRealtime(1.6f);
+            Forja3DPergamino.Mostrar("Has caído", "Y caí como cae un cuerpo muerto.\n\nPero aún no es tu hora, Dante: el camino te espera donde lo dejaste.",
+                "— toca para levantarte —", () => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex), null, true);
         }
 
         void MostrarFinal(string titulo, string boton, UnityEngine.Events.UnityAction accion)
@@ -195,11 +229,14 @@ namespace Forja3D
             vineta.sprite = SpriteVineta(); vineta.color = new Color(0.6f, 0, 0, 0);
 
             hud = Texto(canvasGo.transform, "", 34, TextAnchor.UpperLeft);
-            var rh = hud.rectTransform; rh.offsetMin = new Vector2(48, 40); rh.offsetMax = new Vector2(-40, -150);
+            var rh = hud.rectTransform; rh.offsetMin = new Vector2(48, 40); rh.offsetMax = new Vector2(-40, -165);
 
             // Barras del jugador (arriba a la izquierda)
             (barraVida, barraVidaRetardo) = Barra(canvasGo.transform, new Vector2(0, 1), new Vector2(48, -48), new Vector2(560, 30), new Color(0.75f, 0.08f, 0.06f));
             (barraEstamina, _) = Barra(canvasGo.transform, new Vector2(0, 1), new Vector2(48, -90), new Vector2(440, 16), new Color(0.85f, 0.72f, 0.3f));
+            textoXP = Texto(canvasGo.transform, "", 30, TextAnchor.UpperLeft); textoXP.supportRichText = true;
+            textoXP.rectTransform.offsetMin = new Vector2(50, 0); textoXP.rectTransform.offsetMax = new Vector2(-40, -118);
+            textoXP.color = new Color(0.92f, 0.85f, 0.7f);
             // Barra del jefe (abajo al centro)
             marcoJefe = new GameObject("Jefe", typeof(RectTransform)); marcoJefe.transform.SetParent(canvasGo.transform, false);
             var rj = marcoJefe.GetComponent<RectTransform>(); rj.anchorMin = rj.anchorMax = new Vector2(0.5f, 0); rj.sizeDelta = new Vector2(1000, 90); rj.anchoredPosition = new Vector2(0, 60);

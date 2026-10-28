@@ -83,6 +83,15 @@ namespace Forja3D
             Emitir(inst.destello, pos, Vector3.zero, parry ? 2.2f : 0.9f, parry ? new Color(1f, 0.95f, 0.75f) : new Color(1f, 0.7f, 0.3f, 0.8f), 0.15f);
         }
 
+        // Polvo de luz pálido que sube (un alma que se desvanece)
+        public static void Almas(Vector3 pos, int cantidad = 3)
+        {
+            if (!inst) return;
+            for (int i = 0; i < cantidad; i++)
+                Emitir(inst.chispas, pos + Random.insideUnitSphere * 0.3f, Vector3.up * Random.Range(0.4f, 1.2f) + Random.insideUnitSphere * 0.3f,
+                    Random.Range(0.04f, 0.1f), Color.Lerp(new Color(0.7f, 0.8f, 1f, 0.9f), Color.white, Random.value), 1.2f);
+        }
+
         // Destello de aviso antes de un ataque (amarillo = bloqueable, rojo = imparable)
         public static void Aviso(Vector3 pos, Color color, float tam = 1.3f)
         {

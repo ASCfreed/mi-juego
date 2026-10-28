@@ -26,7 +26,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "V",
@@ -46,7 +48,9 @@
       "voz": "",
       "aura": "",
       "fantasma": true,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "F",
@@ -85,12 +89,18 @@
         {
           "quien": "",
           "texto": "Paolo llora en silencio. El viento vuelve y los arranca. Dante extiende la mano… y no llega."
+        },
+        {
+          "quien": "",
+          "texto": "Francesca se deshace en el torbellino, como una hoja que el viento lleva."
         }
       ],
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": true
+      "clave": true,
+      "desvanecer": true,
+      "arma": ""
     },
     {
       "simbolo": "Q",
@@ -114,7 +124,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": true
+      "clave": true,
+      "desvanecer": true,
+      "arma": ""
     }
   ],
   "jugador": {
@@ -145,6 +157,10 @@
   "recompensa_arma": "",
   "recompensa_nombre": "",
   "recompensa_dialogo": [],
+  "capitulo": "Canto V",
+  "narracion": [],
+  "transicion": "Y Dante cayó como cae un cuerpo muerto.\n\nAl volver en sí, el viaje seguía: más abajo lo esperaba la lluvia eterna, maldita, fría y pesada del tercer círculo… pero esa es otra parte del camino.",
+  "meta_modelo": "",
   "terreno": {
     "tipo": "piedra",
     "colinas": 1,

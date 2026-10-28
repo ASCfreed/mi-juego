@@ -28,7 +28,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "A",
@@ -43,7 +45,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "L",
@@ -58,7 +62,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "W",
@@ -73,7 +79,9 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     },
     {
       "simbolo": "V",
@@ -113,7 +121,9 @@
       "voz": "",
       "aura": "",
       "fantasma": true,
-      "clave": false
+      "clave": false,
+      "desvanecer": false,
+      "arma": ""
     }
   ],
   "jugador": {
@@ -135,15 +145,15 @@
       "texto": "¿Cuánto tiempo he dormido? No recuerdo cómo llegué aquí. Solo recuerdo que me aparté… del camino."
     },
     {
-      "quien": "",
+      "quien": "Consejo",
       "texto": "Joystick: moverte. ATACAR: combo de tres golpes. CORRER: esprint (gasta estamina)."
     },
     {
-      "quien": "",
+      "quien": "Consejo",
       "texto": "Destello AMARILLO: mantén CUBRIR. Púlsalo justo antes del golpe y harás PARRY: el enemigo queda aturdido y tu siguiente golpe es de gracia."
     },
     {
-      "quien": "",
+      "quien": "Consejo",
       "texto": "Destello ROJO: no se puede bloquear. ¡ESQUIVA!"
     }
   ],
@@ -156,6 +166,10 @@
   "recompensa_arma": "",
   "recompensa_nombre": "",
   "recompensa_dialogo": [],
+  "capitulo": "Canto I",
+  "narracion": [],
+  "transicion": "Dejaron atrás la selva y el monte que Dante no pudo subir. Virgilio iba delante; Dante, detrás, con el miedo todavía en el pecho.\n\nAl caer la tarde llegaron ante una puerta alta y oscura. Sobre ella, en color sombrío, había unas palabras escritas que ningún vivo debería leer.",
+  "meta_modelo": "",
   "terreno": {
     "tipo": "pasto",
     "colinas": 0.9,
