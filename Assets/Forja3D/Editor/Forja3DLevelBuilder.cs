@@ -14,8 +14,14 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; }
-    [Serializable] public class JugadorDef { public string modelo; public int vida = 5; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; }
+    [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; }
+    [Serializable]
+    public class JuegoDef
+    {
+        public string titulo; public string subtitulo; public string cita; public string cita_traduccion;
+        public string color_fondo = "#0d0505"; public string color_titulo = "#ebbf6b";
+    }
     [Serializable] public class TerrenoDef { public string tipo = "pasto"; public float colinas = 0.5f; public int semilla = 1; }
     [Serializable]
     public class Nivel
@@ -31,6 +37,8 @@ namespace Forja3D.EditorTools
         public bool niebla;
         public float altura_muros = 3f;
         public string color_muros = "#8c8478";
+        public Linea[] intro;
+        public Linea[] salida;
     }
 
     public static class Forja3DLevelBuilder
@@ -65,9 +73,9 @@ namespace Forja3D.EditorTools
             AssetDatabase.Refresh();
 
             var jsons = Directory.Exists(RutaNiveles)
-                ? Directory.GetFiles(RutaNiveles, "*.json").OrderBy(f => f, StringComparer.Ordinal).ToList()
+                ? Directory.GetFiles(RutaNiveles, "*.json").Where(f => Path.GetFileName(f) != "juego.json").OrderBy(f => f, StringComparer.Ordinal).ToList()
                 : new List<string>();
-            var escenas = new List<string>();
+            var escenas = new List<string> { ConstruirTitulo() };
             if (jsons.Count == 0)
             {
                 Debug.Log("[Forja3D] No hay niveles: construyo el nivel de demostración.");
@@ -76,6 +84,23 @@ namespace Forja3D.EditorTools
             else foreach (var j in jsons)
                 escenas.Add(Construir(JsonUtility.FromJson<Nivel>(File.ReadAllText(j)), Path.GetFileNameWithoutExtension(j)));
             return escenas;
+        }
+
+        // ---------- Pantalla de título (Assets/Forja3D/Niveles/juego.json) ----------
+        static string ConstruirTitulo()
+        {
+            var ruta = $"{RutaNiveles}/juego.json";
+            var j = File.Exists(ruta) ? JsonUtility.FromJson<JuegoDef>(File.ReadAllText(ruta)) : new JuegoDef();
+            var escena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
+            camGo.AddComponent<Camera>(); camGo.AddComponent<AudioListener>();
+            var t = new GameObject("Titulo").AddComponent<Forja3DTitle>();
+            t.titulo = string.IsNullOrEmpty(j.titulo) ? PlayerSettings.productName : j.titulo;
+            t.subtitulo = j.subtitulo ?? ""; t.cita = j.cita ?? ""; t.citaTraduccion = j.cita_traduccion ?? "";
+            t.colorFondo = Hex(j.color_fondo, t.colorFondo); t.colorTitulo = Hex(j.color_titulo, t.colorTitulo);
+            string r = $"{RutaGenerado}/Escenas/00_titulo.unity";
+            EditorSceneManager.SaveScene(escena, r);
+            return r;
         }
 
         // ---------- Construcción ----------
@@ -162,6 +187,7 @@ namespace Forja3D.EditorTools
                         case "jugador": inicio = p; Jugador(n, p, dinamicos); break;
                         case "enemigo": Enemigo(s, p, dinamicos, id, false); break;
                         case "jefe": Enemigo(s, p, dinamicos, id, true); break;
+                        case "npc": Npc(s, p, dinamicos, id); break;
                         case "moneda": Moneda(p, dinamicos, id); break;
                         case "meta": meta = p; Meta(p, c, dinamicos, id); break;
                     }
@@ -187,6 +213,7 @@ namespace Forja3D.EditorTools
             camGo.AddComponent<Forja3DCamera>().objetivo = GameObject.FindWithTag("Player").transform;
             var gm = new GameObject("Forja3D").AddComponent<Forja3DGameManager>();
             gm.titulo = n.titulo;
+            gm.intro = n.intro; gm.salida = n.salida;
             gm.objetivo = n.objetivo == "enemigos" ? Objetivo.Enemigos : n.objetivo == "monedas" ? Objetivo.Monedas : n.objetivo == "jefe" ? Objetivo.Jefe : Objetivo.Meta;
 
             string ruta = $"{RutaGenerado}/Escenas/{id}.unity";
@@ -286,6 +313,25 @@ namespace Forja3D.EditorTools
             if (!cc) { cc = g.AddComponent<CharacterController>(); cc.height = 2f; cc.radius = 0.4f; cc.center = Vector3.up; }
             var h = g.AddComponent<Forja3DHealth>(); h.esJugador = true; h.vidaMaxima = Mathf.Max(1, n.jugador?.vida ?? 5);
             g.AddComponent<Forja3DPlayerController>().crearCamaraAutomatica = false;
+            Arma(g, n.jugador?.arma);
+        }
+
+        // Coloca un arma generada (p. ej. "guadana") en la mano derecha de un humanoide
+        static void Arma(GameObject portador, string modelo)
+        {
+            if (string.IsNullOrEmpty(modelo)) return;
+            var anim = portador.GetComponentInChildren<Animator>();
+            var mano = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
+            var arma = InstanciarModelo(modelo);
+            if (!mano || !arma) { if (arma) UnityEngine.Object.DestroyImmediate(arma); Debug.LogWarning($"[Forja3D] No se pudo poner el arma '{modelo}'."); return; }
+            foreach (var c in arma.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(c);
+            var b = Forja3DImporter.Limites(arma);
+            float largo = Mathf.Max(b.size.x, b.size.y, b.size.z, 0.01f);
+            arma.transform.SetParent(mano, false);
+            arma.transform.localScale = Vector3.one * (1.2f / largo) / Mathf.Max(0.0001f, mano.lossyScale.x);
+            arma.transform.localPosition = Vector3.zero;
+            arma.transform.localRotation = Quaternion.Euler(0, 0, 90);
+            arma.name = "Arma";
         }
 
         static void Enemigo(Simbolo s, Vector3 p, Transform padre, string id, bool jefe)
@@ -307,6 +353,20 @@ namespace Forja3D.EditorTools
                 e.esJefe = true; e.danio = 2; e.velocidad = 2.2f; e.enfriamiento = 1.8f;
                 e.radioDeteccion = 14f; e.radioAtaque = 1.6f * esc; e.radioPatrulla = 2f;
             }
+        }
+
+        static void Npc(Simbolo s, Vector3 p, Transform padre, string id)
+        {
+            var g = InstanciarModelo(s.modelo) ?? Capsula(string.IsNullOrEmpty(s.nombre) ? "Personaje" : s.nombre, Hex(s.color, new Color(0.85f, 0.82f, 0.7f)), id);
+            g.name = string.IsNullOrEmpty(s.nombre) ? "Personaje" : s.nombre;
+            g.transform.SetParent(padre); g.transform.position = p; g.transform.localScale *= Mathf.Max(0.2f, s.escala);
+            var cc = g.GetComponent<CharacterController>();
+            float alto = cc ? cc.height : 2f, radio = cc ? cc.radius : 0.4f;
+            if (cc) UnityEngine.Object.DestroyImmediate(cc);
+            var col = g.AddComponent<CapsuleCollider>(); col.height = alto; col.radius = radio; col.center = Vector3.up * alto / 2f;
+            if (s.seguir) { var ag = g.AddComponent<NavMeshAgent>(); ag.height = alto; ag.radius = radio; ag.speed = 3.2f; ag.stoppingDistance = 2f; }
+            var npc = g.AddComponent<Forja3DNPC>();
+            npc.nombre = s.nombre ?? ""; npc.dialogo = s.dialogo; npc.seguir = s.seguir;
         }
 
         static void Moneda(Vector3 p, Transform padre, string id)

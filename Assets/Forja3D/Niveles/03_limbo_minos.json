@@ -1,0 +1,124 @@
+{
+  "titulo": "II · El Limbo y Minos",
+  "celda": 2,
+  "mapa": [
+    "####################",
+    "#P....T.....T......#",
+    "#.V.T....####....T.#",
+    "#......#H...#......#",
+    "#..T...#.C..#..T...#",
+    "#......##..##......#",
+    "#.T..............T.#",
+    "######.#######.#####",
+    "#...E.....E.....E..#",
+    "#.R......J.....R..M#",
+    "####################"
+  ],
+  "leyenda": [
+    {
+      "simbolo": "E",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "J",
+      "tipo": "jefe",
+      "modelo": "minos",
+      "vida": 30,
+      "escala": 2.4,
+      "color": "",
+      "nombre": "Minos",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "V",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Virgilio",
+      "seguir": true,
+      "dialogo": [
+        {
+          "quien": "Virgilio",
+          "texto": "Este es mi lugar, Dante. Aquí estoy yo."
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "No por pecado, sino por no haber tenido fe. Por eso vivimos en deseo, sin esperanza."
+        },
+        {
+          "quien": "Dante",
+          "texto": "Maestro… ¿tú también?"
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "Sigue. Abajo nos espera quien juzga a las almas."
+        }
+      ]
+    },
+    {
+      "simbolo": "H",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1.05,
+      "color": "#d9d2c0",
+      "nombre": "Homero",
+      "seguir": false,
+      "dialogo": [
+        {
+          "quien": "Homero",
+          "texto": "Honrad al altísimo poeta: su sombra, que se había ido, vuelve."
+        },
+        {
+          "quien": "",
+          "texto": "Y me hicieron todavía más honor, pues me pusieron en su círculo, y fui el sexto entre tanto saber."
+        }
+      ]
+    }
+  ],
+  "jugador": {
+    "modelo": "dante",
+    "vida": 6,
+    "arma": ""
+  },
+  "intro": [
+    {
+      "quien": "",
+      "texto": "Silencio. No hay llanto aquí, solo suspiros que hacen temblar el aire eterno."
+    },
+    {
+      "quien": "",
+      "texto": "En medio de la oscuridad, un noble castillo rodeado siete veces de altos muros."
+    }
+  ],
+  "salida": [
+    {
+      "quien": "Minos",
+      "texto": "¡Oh tú, que vienes al doloroso hospicio! Mira cómo entras y de quién te fías."
+    },
+    {
+      "quien": "Virgilio",
+      "texto": "¿Por qué también tú gritas? No impidas su viaje fatal: así se quiere allá donde se puede lo que se quiere."
+    }
+  ],
+  "terreno": {
+    "tipo": "pasto",
+    "colinas": 0.4,
+    "semilla": 4
+  },
+  "objetivo": "jefe",
+  "cielo": "#363b46",
+  "niebla": false,
+  "altura_muros": 5,
+  "color_muros": "#9a958a"
+}

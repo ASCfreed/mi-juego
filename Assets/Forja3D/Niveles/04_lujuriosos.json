@@ -1,0 +1,135 @@
+{
+  "titulo": "III · La tormenta de los lujuriosos",
+  "celda": 2,
+  "mapa": [
+    "####################",
+    "#P..E....R....E....#",
+    "#V....R......E...R.#",
+    "#..E......E........#",
+    "#R....C.....R...E..#",
+    "#....E....R.....C..#",
+    "#..R.....E.....R...#",
+    "#......E.....E.FQ.M#",
+    "####################"
+  ],
+  "leyenda": [
+    {
+      "simbolo": "E",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "V",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Virgilio",
+      "seguir": true,
+      "dialogo": [
+        {
+          "quien": "Virgilio",
+          "texto": "Son los que sometieron la razón al deseo. La bufera infernal que nunca descansa los arrastra."
+        }
+      ]
+    },
+    {
+      "simbolo": "F",
+      "tipo": "npc",
+      "modelo": "francesca",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Francesca",
+      "seguir": false,
+      "dialogo": [
+        {
+          "quien": "Francesca",
+          "texto": "Oh ser gracioso y benigno, que vas visitando por el aire oscuro a los que teñimos el mundo de sangre…"
+        },
+        {
+          "quien": "Dante",
+          "texto": "Francesca, tus penas me hacen llorar, tristes y piadosas. ¿Cómo os concedió el amor conocer los deseos que no os atrevíais a decir?"
+        },
+        {
+          "quien": "Francesca",
+          "texto": "Nessun maggior dolore che ricordarsi del tempo felice ne la miseria."
+        },
+        {
+          "quien": "Francesca",
+          "texto": "No hay mayor dolor que recordar el tiempo feliz en la miseria."
+        },
+        {
+          "quien": "Francesca",
+          "texto": "Leíamos un día, por placer, de Lancelote… Galeotto fu 'l libro e chi lo scrisse: aquel día no leímos más."
+        },
+        {
+          "quien": "Francesca",
+          "texto": "Amor, ch'a nullo amato amar perdona, mi prese del costui piacer sì forte, che, come vedi, ancor non m'abbandona."
+        },
+        {
+          "quien": "",
+          "texto": "Paolo llora en silencio. El viento vuelve y los arranca. Dante extiende la mano… y no llega."
+        }
+      ]
+    },
+    {
+      "simbolo": "Q",
+      "tipo": "npc",
+      "modelo": "paolo",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Paolo",
+      "seguir": false,
+      "dialogo": [
+        {
+          "quien": "",
+          "texto": "Paolo no dice una palabra. Solo llora."
+        }
+      ]
+    }
+  ],
+  "jugador": {
+    "modelo": "dante",
+    "vida": 7,
+    "arma": ""
+  },
+  "intro": [
+    {
+      "quien": "",
+      "texto": "Un lugar mudo de toda luz, que muge como el mar en tempestad."
+    },
+    {
+      "quien": "",
+      "texto": "Las almas pasan en bandadas, como estorninos en invierno, estrelladas contra la roca."
+    }
+  ],
+  "salida": [
+    {
+      "quien": "",
+      "texto": "E caddi come corpo morto cade."
+    },
+    {
+      "quien": "",
+      "texto": "Y caí como cae un cuerpo muerto."
+    }
+  ],
+  "terreno": {
+    "tipo": "piedra",
+    "colinas": 1,
+    "semilla": 5
+  },
+  "objetivo": "meta",
+  "cielo": "#2b1d3a",
+  "niebla": true,
+  "altura_muros": 4,
+  "color_muros": "#3a2f45"
+}

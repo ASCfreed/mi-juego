@@ -1,0 +1,130 @@
+{
+  "titulo": "I · La Puerta y el Aqueronte",
+  "celda": 2,
+  "mapa": [
+    "####################",
+    "#P.V..E.....E......#",
+    "#..R.......R.......#",
+    "#.....E...J...E..R.#",
+    "#.R......C.........#",
+    "#########..#########",
+    "#...E..........E...#",
+    "#.R.....R....R.....#",
+    "#....E....K.....E..#",
+    "#..R....B....R....M#",
+    "####################"
+  ],
+  "leyenda": [
+    {
+      "simbolo": "E",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "J",
+      "tipo": "jefe",
+      "modelo": "muerte",
+      "vida": 18,
+      "escala": 1,
+      "color": "",
+      "nombre": "La Muerte",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "K",
+      "tipo": "jefe",
+      "modelo": "caron",
+      "vida": 26,
+      "escala": 2.2,
+      "color": "",
+      "nombre": "Carón",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "B",
+      "tipo": "decoracion",
+      "modelo": "barca",
+      "vida": 2,
+      "escala": 2.5,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "V",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Virgilio",
+      "seguir": true,
+      "dialogo": [
+        {
+          "quien": "Virgilio",
+          "texto": "Aquí conviene dejar todo recelo; aquí conviene que muera toda cobardía."
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "Hemos llegado al lugar donde verás a la gente dolorosa que ha perdido el bien del intelecto."
+        }
+      ]
+    }
+  ],
+  "jugador": {
+    "modelo": "dante",
+    "vida": 6,
+    "arma": ""
+  },
+  "intro": [
+    {
+      "quien": "",
+      "texto": "Per me si va ne la città dolente, / per me si va ne l'etterno dolore, / per me si va tra la perduta gente."
+    },
+    {
+      "quien": "",
+      "texto": "Lasciate ogne speranza, voi ch'intrate."
+    },
+    {
+      "quien": "",
+      "texto": "Abandonad toda esperanza, vosotros que entráis."
+    },
+    {
+      "quien": "Dante",
+      "texto": "Maestro, su sentido me es duro."
+    }
+  ],
+  "salida": [
+    {
+      "quien": "Carón",
+      "texto": "¡Guai a voi, anime prave! ¡Tú, alma viva, apártate de los muertos!"
+    },
+    {
+      "quien": "Virgilio",
+      "texto": "Caronte, non ti crucciare: vuolsi così colà dove si puote ciò che si vuole, e più non dimandare."
+    },
+    {
+      "quien": "",
+      "texto": "La tierra tembló. Un relámpago bermejo. Y caí como el hombre a quien el sueño atrapa."
+    }
+  ],
+  "terreno": {
+    "tipo": "piedra",
+    "colinas": 0.7,
+    "semilla": 3
+  },
+  "objetivo": "jefe",
+  "cielo": "#2a1d17",
+  "niebla": true,
+  "altura_muros": 5,
+  "color_muros": "#2b2522"
+}

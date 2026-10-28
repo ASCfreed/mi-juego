@@ -48,7 +48,7 @@ namespace Forja3D
             Forja3DAnim.Float(anim, "Speed", agente.velocity.magnitude);
 
             var hJugador = jugador ? jugador.GetComponent<Forja3DHealth>() : null;
-            bool jugadorVivo = jugador && (!hJugador || !hJugador.Muerto) && !Forja3DGameManager.Terminado;
+            bool jugadorVivo = jugador && (!hJugador || !hJugador.Muerto) && !Forja3DGameManager.Bloqueado;
             float d = jugadorVivo ? Vector3.Distance(transform.position, jugador.position) : Mathf.Infinity;
 
             if (d <= radioAtaque)
@@ -99,7 +99,7 @@ namespace Forja3D
 
         void Golpear()
         {
-            if (vida.Muerto || !jugador) return;
+            if (vida.Muerto || !jugador || Forja3DGameManager.Bloqueado) return;
             if (Vector3.Distance(transform.position, jugador.position) <= radioAtaque * 1.25f)
             {
                 var h = jugador.GetComponent<Forja3DHealth>();

@@ -12,8 +12,12 @@ namespace Forja3D
     {
         public string titulo = "Nivel";
         public Objetivo objetivo = Objetivo.Meta;
+        public Linea[] intro;   // narración/diálogo al empezar el nivel
+        public Linea[] salida;  // al completar el nivel, antes de pasar al siguiente
 
         public static bool Terminado { get; private set; }
+        // Bloquea al jugador y a los enemigos (fin del nivel o diálogo abierto)
+        public static bool Bloqueado => Terminado || Forja3DDialogue.Activo;
         static Forja3DGameManager inst;
         static int enemigos, derrotados, monedas, recogidas, jefes, jefesDerrotados;
         static System.Collections.Generic.List<Forja3DHealth> vidasJefe = new System.Collections.Generic.List<Forja3DHealth>();
@@ -52,7 +56,8 @@ namespace Forja3D
         {
             var p = GameObject.FindWithTag("Player");
             if (p) { jugador = p.GetComponent<Forja3DHealth>(); if (jugador) jugador.AlMorir += Perder; }
-            Aviso(titulo + ObjetivoTexto());
+            PlayerPrefs.SetInt(Forja3DTitle.ClaveProgreso, Mathf.Max(1, SceneManager.GetActiveScene().buildIndex));
+            Forja3DDialogue.Mostrar(intro, () => Aviso(titulo + ObjetivoTexto()));
         }
 
         void OnDestroy() { if (inst == this) inst = null; }
@@ -92,8 +97,15 @@ namespace Forja3D
         void Ganar()
         {
             Terminado = true;
+            Forja3DDialogue.Mostrar(salida, PanelVictoria);
+        }
+
+        void PanelVictoria()
+        {
             bool hayMas = SceneManager.GetActiveScene().buildIndex + 1 < SceneManager.sceneCountInBuildSettings;
-            MostrarFinal(hayMas ? "¡NIVEL COMPLETADO!" : "¡GANASTE EL JUEGO!", hayMas ? "SIGUIENTE" : "JUGAR DE NUEVO",
+            if (hayMas) PlayerPrefs.SetInt(Forja3DTitle.ClaveProgreso, SceneManager.GetActiveScene().buildIndex + 1);
+            PlayerPrefs.Save();
+            MostrarFinal(hayMas ? "NIVEL COMPLETADO" : "FIN DE ESTA PARTE DEL VIAJE", hayMas ? "SIGUIENTE" : "VOLVER AL INICIO",
                 () => SceneManager.LoadScene(hayMas ? SceneManager.GetActiveScene().buildIndex + 1 : 0));
         }
 

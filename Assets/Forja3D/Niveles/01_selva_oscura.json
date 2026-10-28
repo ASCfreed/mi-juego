@@ -1,0 +1,138 @@
+{
+  "titulo": "Prólogo · La selva oscura",
+  "celda": 2,
+  "mapa": [
+    "####################",
+    "#P..T...T..##..T...#",
+    "#.T...T....##....T.#",
+    "#....C...T..A..T...#",
+    "#.T....E.......##..#",
+    "#...T.....T..E.##..#",
+    "#..##..T..L...T....#",
+    "#..##.....E.....T..#",
+    "#.T....T....C..W.T.#",
+    "#....T....T.....VTM#",
+    "####################"
+  ],
+  "leyenda": [
+    {
+      "simbolo": "E",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "A",
+      "tipo": "enemigo",
+      "modelo": "pantera",
+      "vida": 4,
+      "escala": 1.2,
+      "color": "",
+      "nombre": "La pantera",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "L",
+      "tipo": "enemigo",
+      "modelo": "leon",
+      "vida": 6,
+      "escala": 1.4,
+      "color": "",
+      "nombre": "El león",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "W",
+      "tipo": "jefe",
+      "modelo": "loba",
+      "vida": 30,
+      "escala": 1.5,
+      "color": "",
+      "nombre": "La loba",
+      "seguir": false,
+      "dialogo": []
+    },
+    {
+      "simbolo": "V",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Virgilio",
+      "seguir": false,
+      "dialogo": [
+        {
+          "quien": "Virgilio",
+          "texto": "No hombre. Hombre fui. Nací bajo Julio, aunque tarde, y viví en Roma en tiempos de los dioses falsos."
+        },
+        {
+          "quien": "Dante",
+          "texto": "¿Eres tú aquel Virgilio, aquella fuente que derrama tan ancho río de palabras? Tú eres mi maestro…"
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "Por esa cima no subirás: esa bestia no deja pasar a nadie. Te conviene otro camino."
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "Yo seré tu guía, y te sacaré de aquí por un lugar eterno, donde oirás los gritos desesperados."
+        },
+        {
+          "quien": "Beatriz",
+          "texto": "Amor me movió, que me hace hablar."
+        },
+        {
+          "quien": "Dante",
+          "texto": "Ve. Que un solo querer nos guíe a los dos. Tú, guía; tú, señor; tú, maestro."
+        }
+      ]
+    }
+  ],
+  "jugador": {
+    "modelo": "dante",
+    "vida": 6,
+    "arma": ""
+  },
+  "intro": [
+    {
+      "quien": "",
+      "texto": "Nel mezzo del cammin di nostra vita / mi ritrovai per una selva oscura, / ché la diritta via era smarrita."
+    },
+    {
+      "quien": "",
+      "texto": "A mitad del camino de nuestra vida me encontré en una selva oscura, porque la recta vía se había perdido."
+    },
+    {
+      "quien": "Dante",
+      "texto": "¿Cuánto tiempo he dormido? No recuerdo cómo llegué aquí. Solo recuerdo que me aparté… del camino."
+    },
+    {
+      "quien": "",
+      "texto": "Muévete con el joystick. Toca ATACAR para golpear con la cuerda. Busca la luz entre los árboles."
+    }
+  ],
+  "salida": [
+    {
+      "quien": "",
+      "texto": "Y echaron a andar. Detrás quedó la selva; delante, la puerta."
+    }
+  ],
+  "terreno": {
+    "tipo": "pasto",
+    "colinas": 0.9,
+    "semilla": 1300
+  },
+  "objetivo": "meta",
+  "cielo": "#1b2333",
+  "niebla": true,
+  "altura_muros": 4,
+  "color_muros": "#1f2a1c"
+}

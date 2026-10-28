@@ -28,6 +28,9 @@ public static class Forja3DBuild
 {
     const string RutaApp = "ProjectSettings/Forja3DApp.json";
     [Serializable] class DatosApp { public string nombre; public string version; public int codigo = 1; }
+    // Identidad fija del juego (Assets/Forja3D/App): el id de paquete NO puede cambiar después de publicar en Google Play
+    const string RutaIdentidad = "Assets/Forja3D/App/identidad.json", RutaIcono = "Assets/Forja3D/App/icono.png";
+    [Serializable] class Identidad { public string paquete; public string empresa; }
 
     static string Arg(string nombre, string porDefecto)
     {
@@ -66,10 +69,15 @@ public static class Forja3DBuild
             Debug.Log("[Forja3D] 3/3 Compilando APK…");
             var t = NamedBuildTarget.Android;
             PlayerSettings.productName = nombreApp;
-            PlayerSettings.companyName = "Forja3D";
+            var id = File.Exists(RutaIdentidad) ? JsonUtility.FromJson<Identidad>(File.ReadAllText(RutaIdentidad)) : new Identidad();
+            PlayerSettings.companyName = string.IsNullOrWhiteSpace(id.empresa) ? "Forja3D" : id.empresa;
             var slug = new string(nombreApp.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
             if (string.IsNullOrEmpty(slug) || char.IsDigit(slug[0])) slug = "juego" + slug;
-            PlayerSettings.SetApplicationIdentifier(t, "com.forja3d." + slug);
+            PlayerSettings.SetApplicationIdentifier(t, string.IsNullOrWhiteSpace(id.paquete) ? "com.forja3d." + slug : id.paquete.Trim());
+            // Icono de la app (1024x1024). Futuro iOS/PC: el mismo icono sirve con NamedBuildTarget.iOS / Standalone.
+            var icono = AssetDatabase.LoadAssetAtPath<Texture2D>(RutaIcono);
+            if (icono != null) PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icono }, IconKind.Any);
+            PlayerSettings.SplashScreen.backgroundColor = new Color(0.03f, 0.01f, 0.01f);
             PlayerSettings.bundleVersion = version;
             PlayerSettings.Android.bundleVersionCode = codigo;
             PlayerSettings.SetScriptingBackend(t, ScriptingImplementation.IL2CPP);

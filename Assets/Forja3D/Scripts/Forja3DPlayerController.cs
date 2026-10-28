@@ -56,7 +56,7 @@ namespace Forja3D
         void Update()
         {
             bool muerto = vida && vida.Muerto;
-            bool bloqueado = muerto || Forja3DGameManager.Terminado;
+            bool bloqueado = muerto || Forja3DGameManager.Bloqueado;
 
             var entrada = bloqueado ? Vector2.zero : Forja3DInput.Mover;
             Vector3 dir = new Vector3(entrada.x, 0, entrada.y);
