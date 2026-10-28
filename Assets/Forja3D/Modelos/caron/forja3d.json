@@ -1,0 +1,19 @@
+{
+  "forja3d": 1,
+  "personaje": true,
+  "esqueleto": "tripo",
+  "rig_type": "biped",
+  "archivos": [
+    {
+      "nombre": "jefe",
+      "tipo": "modelo",
+      "clips": [
+        "idle",
+        "caminar",
+        "ataque",
+        "golpeado",
+        "muerte"
+      ]
+    }
+  ]
+}
