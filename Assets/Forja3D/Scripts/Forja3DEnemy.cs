@@ -325,6 +325,14 @@ namespace Forja3D
         public void Empujar(Vector3 v, bool fuerte)
         {
             empuje = superArmadura ? v * 0.3f : v;
+            // Golpe fuerte a un enemigo común: lo derriba si tiene el clip
+            if (fuerte && !superArmadura && !vida.Muerto && Forja3DAnim.Tiene(anim, "KnockDown", AnimatorControllerParameterType.Trigger) && Random.value < 0.5f)
+            {
+                StopAllCoroutines(); SoltarTurno();
+                Forja3DAnim.Trigger(anim, "KnockDown");
+                aturdidoHasta = Time.time + 1.4f; Cambiar(Estado.Aturdido);
+                return;
+            }
             // Los golpes fuertes interrumpen el ataque de los enemigos comunes
             if (fuerte && !superArmadura && (estado == Estado.Preparando || estado == Estado.Acercarse || estado == Estado.Acecho))
             {
@@ -392,6 +400,23 @@ namespace Forja3D
             Forja3DAudio.Sonar("caida_cuerpo", transform.position, 0.7f);
         }
 
+        IEnumerator CamaraLenta()
+        {
+            Time.timeScale = 0.25f;
+            yield return new WaitForSecondsRealtime(1.3f);
+            for (float t = 0; t < 1f; t += Time.unscaledDeltaTime / 0.5f) { Time.timeScale = Mathf.Lerp(0.25f, 1f, t); yield return null; }
+            Time.timeScale = 1f;
+        }
+
+        // El cadáver se hunde en el suelo y desaparece (sin "pop")
+        IEnumerator Hundirse(float espera)
+        {
+            yield return new WaitForSeconds(espera);
+            var ini = transform.position;
+            for (float t = 0; t < 1f; t += Time.deltaTime / 1.5f) { transform.position = ini + Vector3.down * 1.6f * t; yield return null; }
+            Destroy(gameObject);
+        }
+
         void Morir()
         {
             StopAllCoroutines();
@@ -403,10 +428,19 @@ namespace Forja3D
             foreach (var c in GetComponentsInChildren<Collider>()) c.enabled = false;
             Forja3DAudio.Sonar("muerte_" + voz, Cabeza, 1f, 0.1f);
             Forja3DFX.Sangre(transform.position + Vector3.up, Vector3.up, esJefe ? 60 : 30);
-            if (esJefe) { Forja3DFX.Temblor(0.6f, 1f); Forja3DFX.HitStop(0.35f, 0.1f); Forja3DGameManager.JefeDerrotado(); }
-            else Forja3DGameManager.EnemigoDerrotado();
-            if (!Forja3DAnim.Tiene(anim, "Dead", AnimatorControllerParameterType.Bool)) StartCoroutine(Caida());
-            Destroy(gameObject, 4f);
+            bool clipMuerte = Forja3DAnim.Tiene(anim, "Dead", AnimatorControllerParameterType.Bool);
+            if (!clipMuerte) StartCoroutine(Caida());
+            if (esJefe)
+            {
+                // Derrota del jefe: cámara lenta, temblor y el cuerpo queda en el suelo
+                StartCoroutine(CamaraLenta());
+                Forja3DFX.Temblor(0.6f, 1.2f);
+                Forja3DFX.Polvo(transform.position, radioAtaque * 1.5f);
+                Forja3DAudio.Sonar("impacto_suelo", transform.position, 1f, 0f, 0.7f);
+                Forja3DGameManager.Mensaje($"{(string.IsNullOrEmpty(nombre) ? "EL JEFE" : nombre.ToUpperInvariant())} HA CAÍDO");
+                Forja3DGameManager.JefeDerrotado();
+            }
+            else { Forja3DGameManager.EnemigoDerrotado(); StartCoroutine(Hundirse(4f)); }
         }
     }
 }

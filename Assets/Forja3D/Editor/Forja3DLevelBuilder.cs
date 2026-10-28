@@ -224,10 +224,11 @@ namespace Forja3D.EditorTools
                         case "jefe": Enemigo(s, p, dinamicos, id, true); break;
                         case "npc": Npc(s, p, dinamicos, id); break;
                         case "moneda": Moneda(p, dinamicos, id); break;
-                        case "meta": meta = p; Meta(p, c, dinamicos, id); break;
+                        case "meta": meta = p; break;
                     }
                 }
             if (inicio == null) throw new Exception($"Nivel {id}: falta la P del jugador.");
+            if (meta != null) Meta(meta.Value, c, dinamicos, id, inicio.Value, rocas, matRoca);
             if (meta == null) throw new Exception($"Nivel {id}: falta la M de la meta.");
 
             // Validación: debe existir camino del jugador a la meta
@@ -621,6 +622,7 @@ namespace Forja3D.EditorTools
             var h = g.AddComponent<Forja3DHealth>(); h.esJugador = true; h.vidaMaxima = Mathf.Max(1, n.jugador?.vida ?? 5);
             g.AddComponent<Forja3DPlayerController>().crearCamaraAutomatica = false;
             Arma(g, !string.IsNullOrEmpty(n.jugador?.arma) ? n.jugador.arma : Forja3DImporter.RutaPrefab("espada") ? "espada" : null);
+            if (Forja3DImporter.RutaPrefab("escudo")) Escudo(g, "escudo");
         }
 
         // Coloca un arma generada (p. ej. "espada") en la mano derecha de un humanoide.
@@ -680,6 +682,30 @@ namespace Forja3D.EditorTools
             arma.transform.SetParent(mano, true);
             arma.name = "Arma";
             GameObjectUtility.SetStaticEditorFlags(arma, (StaticEditorFlags)0);
+        }
+
+        // Escudo en el antebrazo izquierdo: la cara (eje más fino del modelo) mira hacia fuera del brazo
+        static void Escudo(GameObject portador, string modelo)
+        {
+            var anim = portador.GetComponentInChildren<Animator>();
+            var ante = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.LeftLowerArm) : null;
+            var mano = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.LeftHand) : null;
+            var esc = InstanciarModelo(modelo);
+            if (!ante || !mano || !esc) { if (esc) UnityEngine.Object.DestroyImmediate(esc); return; }
+            foreach (var c in esc.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(c);
+            esc.transform.position = Vector3.zero; esc.transform.rotation = Quaternion.identity; esc.transform.localScale = Vector3.one;
+            var b = Forja3DImporter.Limites(esc);
+            int fino = b.size.x <= b.size.y && b.size.x <= b.size.z ? 0 : b.size.y <= b.size.z ? 1 : 2;
+            var normal = Vector3.zero; normal[fino] = 1f;
+            float diametro = Mathf.Max(b.size[(fino + 1) % 3], b.size[(fino + 2) % 3], 0.01f);
+            float escP = portador.transform.lossyScale.y;
+            esc.transform.localScale = Vector3.one * (0.75f * escP / diametro);
+            // En T-pose el brazo izquierdo apunta a -X: la cara del escudo mira hacia delante del personaje
+            esc.transform.rotation = Quaternion.FromToRotation(normal, portador.transform.forward);
+            var centroAnte = Vector3.Lerp(ante.position, mano.position, 0.55f) + portador.transform.forward * 0.09f * escP;
+            esc.transform.position += centroAnte - Forja3DImporter.Limites(esc).center;
+            esc.transform.SetParent(ante, true);
+            esc.name = "Escudo";
         }
 
         static void Enemigo(Simbolo s, Vector3 p, Transform padre, string id, bool jefe)
@@ -742,19 +768,40 @@ namespace Forja3D.EditorTools
             g.AddComponent<Forja3DCollectible>();
         }
 
-        static void Meta(Vector3 p, float c, Transform padre, string id)
+        // Meta: la Puerta (modelo "puerta") con un resplandor; sin modelo, un arco de roca procedural
+        static void Meta(Vector3 p, float c, Transform padre, string id, Vector3 mirarA, Mesh[] rocas, Material matRoca)
         {
             var g = new GameObject("Meta"); g.transform.SetParent(padre); g.transform.position = p;
+            var hacia = mirarA - p; hacia.y = 0;
+            if (hacia.sqrMagnitude > 0.01f) g.transform.rotation = Quaternion.LookRotation(-hacia.normalized);
             var col = g.AddComponent<BoxCollider>(); col.isTrigger = true; col.size = new Vector3(c * 0.9f, 3f, c * 0.9f); col.center = Vector3.up * 1.5f;
-            var m = Mat("meta", new Color(0.2f, 0.95f, 0.4f)); m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", new Color(0.1f, 0.6f, 0.2f));
-            var basePlat = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            UnityEngine.Object.DestroyImmediate(basePlat.GetComponent<Collider>());
-            basePlat.transform.SetParent(g.transform); basePlat.transform.localPosition = Vector3.up * 0.05f; basePlat.transform.localScale = new Vector3(c * 0.8f, 0.05f, c * 0.8f);
-            basePlat.GetComponent<Renderer>().sharedMaterial = m;
-            var rayo = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            UnityEngine.Object.DestroyImmediate(rayo.GetComponent<Collider>());
-            rayo.transform.SetParent(g.transform); rayo.transform.localPosition = Vector3.up * 2.5f; rayo.transform.localScale = new Vector3(0.3f, 5f, 0.3f);
-            rayo.GetComponent<Renderer>().sharedMaterial = m;
+
+            var puerta = InstanciarModelo("puerta");
+            if (puerta)
+            {
+                foreach (var cc in puerta.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
+                puerta.transform.SetParent(g.transform, false);
+                var b = Forja3DImporter.Limites(puerta);
+                puerta.transform.localScale *= 5.5f / Mathf.Max(0.01f, b.size.y);
+                b = Forja3DImporter.Limites(puerta);
+                puerta.transform.position += new Vector3(p.x - b.center.x, p.y - b.min.y, p.z - b.center.z);
+            }
+            else
+            {
+                var rnd = new System.Random(id.GetHashCode());
+                for (int lado = -1; lado <= 1; lado += 2)
+                    for (int k = 0; k < 3; k++)
+                    {
+                        var r = Roca(rocas[rnd.Next(rocas.Length)], matRoca, Vector3.zero, new Vector3(1.1f, 1.6f, 1.1f), rnd, g.transform, false);
+                        r.transform.localPosition = new Vector3(lado * c * 0.7f, 0.6f + k * 1.4f, 0);
+                    }
+                var dintel = Roca(rocas[0], matRoca, Vector3.zero, new Vector3(c * 1.9f, 0.9f, 1.1f), rnd, g.transform, false);
+                dintel.transform.localPosition = new Vector3(0, 4.4f, 0); dintel.transform.localRotation = Quaternion.identity;
+            }
+            // Resplandor rojizo dentro del arco: señala la salida
+            var luz = new GameObject("Resplandor").AddComponent<Light>();
+            luz.transform.SetParent(g.transform, false); luz.transform.localPosition = Vector3.up * 2f;
+            luz.type = LightType.Point; luz.color = new Color(1f, 0.45f, 0.2f); luz.range = 9f; luz.intensity = 2.2f;
             g.AddComponent<Forja3DGoal>();
         }
 

@@ -17,7 +17,7 @@ namespace Forja3D
 
     public class Forja3DGoal : MonoBehaviour
     {
-        void Update() => transform.Rotate(0, 45f * Time.deltaTime, 0, Space.World);
+        // La puerta no gira: es la salida del nivel
         void OnTriggerEnter(Collider c) { if (c.CompareTag("Player")) Forja3DGameManager.MetaAlcanzada(); }
     }
 }

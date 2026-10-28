@@ -117,7 +117,7 @@ namespace Forja3D
 
             // ── Esquivar ──
             if (libre && !esquivando && cc.isGrounded && Forja3DInput.Esquivar && Estamina >= costoEsquiva * 0.5f)
-                StartCoroutine(Esquivar(dir.sqrMagnitude > 0.01f ? dir.normalized : -transform.forward));
+                StartCoroutine(Esquivar(dir.sqrMagnitude > 0.01f ? dir.normalized : transform.forward));
 
             // ── Atacar (combo) ──
             if (libre && !esquivando && !Cubriendo && Forja3DInput.Atacar)
@@ -200,8 +200,8 @@ namespace Forja3D
                 Gastar(costoAtaque);
 
                 // Cada golpe usa un clip distinto si existe (Skill1/Skill2 de la biblioteca de animaciones)
-                string trig = pasoCombo == 2 && Forja3DAnim.Tiene(anim, "Skill1", AnimatorControllerParameterType.Trigger) ? "Skill1"
-                            : pasoCombo == 3 && Forja3DAnim.Tiene(anim, "Skill2", AnimatorControllerParameterType.Trigger) ? "Skill2" : "Attack";
+                // Tajo derecho → tajo izquierdo → tajo cargado (biblioteca de combate); si faltan, Skill1/Skill2
+                string trig = pasoCombo == 2 ? Primero("Combo2", "Skill1") : pasoCombo == 3 ? Primero("Combo3", "Skill2") : "Attack";
                 Forja3DAnim.Trigger(anim, trig);
 
                 var obj = BuscarObjetivo(5f, 140f);
@@ -223,6 +223,12 @@ namespace Forja3D
             } while (quiereOtroGolpe && pasoCombo < 3 && !Forja3DGameManager.Bloqueado && !(vida && vida.Muerto) && Time.time >= aturdidoHasta);
             if (pasoCombo >= 3) { pasoCombo = 0; yield return new WaitForSeconds(0.15f); }
             atacando = false;
+        }
+
+        string Primero(params string[] triggers)
+        {
+            foreach (var t in triggers) if (Forja3DAnim.Tiene(anim, t, AnimatorControllerParameterType.Trigger)) return t;
+            return "Attack";
         }
 
         void Golpear(bool fuerte)
@@ -255,35 +261,37 @@ namespace Forja3D
         }
 
         // ── Voltereta ──
+        // Con clip (biblioteca: Roll_Dodge) el modelo rueda de verdad; sin clip, se agacha y se desliza.
+        // Recorre unos 4,5 m; invulnerable durante casi toda la voltereta.
         IEnumerator Esquivar(Vector3 dir)
         {
             esquivando = true;
             Gastar(costoEsquiva);
-            if (vida) vida.InvulnerableHasta = Time.time + 0.4f;
-            transform.rotation = Quaternion.LookRotation(dir);
+            if (vida) vida.InvulnerableHasta = Time.time + 0.42f;
             Forja3DAudio.Sonar("esquiva", transform.position + Vector3.up * 0.5f, 0.8f);
             bool clip = Forja3DAnim.Tiene(anim, "Dodge", AnimatorControllerParameterType.Trigger);
             if (clip) Forja3DAnim.Trigger(anim, "Dodge");
-            const float dur = 0.45f;
-            var pivote = new Vector3(0, 0.8f, 0);
-            var rotIni = visual ? visual.localRotation : Quaternion.identity;
-            var posIni = visual ? visual.localPosition : Vector3.zero;
+            const float dur = 0.5f;
+            var rotIni = transform.rotation; var rotFin = Quaternion.LookRotation(dir);
+            var posVis = visual ? visual.localPosition : Vector3.zero;
+            var rotVis = visual ? visual.localRotation : Quaternion.identity;
             for (float t = 0; t < dur; t += Time.deltaTime)
             {
                 float k = t / dur;
-                float v = Mathf.Lerp(9f, 3f, k);
+                transform.rotation = Quaternion.Slerp(rotIni, rotFin, Mathf.Clamp01(k * 8f)); // gira rápido pero sin salto brusco
+                float v = Mathf.Lerp(13f, 4f, k * k);
                 vy += gravedad * Time.deltaTime; if (cc.isGrounded && vy < 0) vy = -2f;
                 cc.Move((dir * v + Vector3.up * vy) * Time.deltaTime);
                 if (!clip && visual)
                 {
-                    // Voltereta procedural: gira el modelo sobre su centro
-                    var r = Quaternion.AngleAxis(360f * Mathf.SmoothStep(0, 1, k), Vector3.right);
-                    visual.localRotation = r * rotIni;
-                    visual.localPosition = posIni + pivote - r * pivote;
+                    // Sin clip: agachado e inclinado hacia delante (sin girar el modelo entero)
+                    float baja = Mathf.Sin(k * Mathf.PI);
+                    visual.localPosition = posVis + Vector3.down * 0.45f * baja;
+                    visual.localRotation = rotVis * Quaternion.Euler(35f * baja, 0, 0);
                 }
                 yield return null;
             }
-            if (visual) { visual.localRotation = rotIni; visual.localPosition = posIni; }
+            if (visual) { visual.localPosition = posVis; visual.localRotation = rotVis; }
             esquivando = false;
         }
 
@@ -300,6 +308,7 @@ namespace Forja3D
             {
                 // ¡PARRY!
                 if (enemigo) enemigo.Aturdir(1.8f);
+                Forja3DAnim.Trigger(anim, "Parry");
                 Forja3DFX.Chispas(punto, 40, true);
                 Forja3DFX.HitStop(0.16f, 0.02f);
                 Forja3DFX.Temblor(0.3f, 0.2f);

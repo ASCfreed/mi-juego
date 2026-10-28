@@ -218,8 +218,11 @@ namespace Forja3D.EditorTools
             var correr = Buscar("correr_rapido", "correr", "run"); if (correr) arbol.AddChild(correr, 5.5f);
             sm.defaultState = loco;
 
+            // Biblioteca de combate (ids de Meshy): 158 voltereta, 138 bloqueo, 147 parry con espada, 178 reacción al golpe,
+            // 189 caer de espaldas, 219 tajo derecho, 97 tajo izquierdo, 242 tajo cargado, 187 derribado
             var acciones = new (string trigger, string[] claves)[] {
-                ("Jump", new[]{"saltar","jump"}), ("Attack", new[]{"ataque","attack"}), ("Hit", new[]{"golpeado","hit"}),
+                ("Jump", new[]{"saltar","jump"}), ("Attack", new[]{"accion_219","ataque","attack"}), ("Hit", new[]{"accion_178","golpeado","hit"}),
+                ("Dodge", new[]{"accion_158"}), ("Combo2", new[]{"accion_97"}), ("Combo3", new[]{"accion_242"}), ("KnockDown", new[]{"accion_187"}),
                 ("Skill1", new[]{"habilidad_1"}), ("Skill2", new[]{"habilidad_2"}), ("Skill3", new[]{"habilidad_3"}),
                 ("Dance", new[]{"bailar"}), ("Alert", new[]{"alerta"}),
             };
@@ -232,9 +235,13 @@ namespace Forja3D.EditorTools
                 ida.AddCondition(AnimatorConditionMode.If, 0, trigger);
                 ida.AddCondition(AnimatorConditionMode.IfNot, 0, "Dead");
                 ida.duration = 0.1f; ida.canTransitionToSelf = false;
-                var vuelta = st.AddTransition(loco); vuelta.hasExitTime = true; vuelta.exitTime = 0.9f; vuelta.duration = 0.15f;
+                var vuelta = st.AddTransition(loco); vuelta.hasExitTime = true; vuelta.duration = 0.15f;
+                // Reacciones y esquivas cortas: vuelven antes a la locomoción para que el control sea ágil
+                vuelta.exitTime = trigger == "Hit" ? 0.6f : trigger == "Dodge" ? 0.8f : trigger.StartsWith("Combo") || trigger == "Attack" ? 0.75f : 0.9f;
+                if (trigger == "Dodge" || trigger == "Hit") st.speed = trigger == "Dodge" ? 1.25f : 1.3f;
             }
-            var muerte = Buscar("muerte", "dead");
+            if (humanoide) CapaTorso(ctrl, carpeta, Buscar("accion_138"), Buscar("accion_147"));
+            var muerte = Buscar("accion_189", "muerte", "dead");
             if (muerte)
             {
                 var st = sm.AddState("Muerte"); st.motion = muerte;
@@ -243,6 +250,50 @@ namespace Forja3D.EditorTools
             }
             AssetDatabase.SaveAssets();
             return ctrl;
+        }
+
+        // Capa de torso (solo humanoides): cubrirse y parry con los brazos mientras las piernas siguen caminando
+        static void CapaTorso(AnimatorController ctrl, string carpeta, AnimationClip bloqueo, AnimationClip parry)
+        {
+            if (!bloqueo && !parry) return;
+            var mascara = new AvatarMask { name = "Torso" };
+            for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
+            {
+                var parte = (AvatarMaskBodyPart)i;
+                bool piernas = parte == AvatarMaskBodyPart.LeftLeg || parte == AvatarMaskBodyPart.RightLeg || parte == AvatarMaskBodyPart.Root
+                            || parte == AvatarMaskBodyPart.LeftFootIK || parte == AvatarMaskBodyPart.RightFootIK;
+                mascara.SetHumanoidBodyPartActive(parte, !piernas);
+            }
+            AssetDatabase.CreateAsset(mascara, $"{carpeta}/{Path.GetFileName(carpeta)}_Torso.mask");
+
+            ctrl.AddParameter("Block", AnimatorControllerParameterType.Bool);
+            ctrl.AddParameter("Parry", AnimatorControllerParameterType.Trigger);
+            // Pose de guardia: el clip de bloqueo se congela en este punto (0-1)
+            var ps = ctrl.parameters.ToList();
+            ps.Add(new AnimatorControllerParameter { name = "PoseGuardia", type = AnimatorControllerParameterType.Float, defaultFloat = 0.42f });
+            ctrl.parameters = ps.ToArray();
+
+            ctrl.AddLayer("Torso");
+            var capas = ctrl.layers;
+            var capa = capas[capas.Length - 1];
+            capa.avatarMask = mascara; capa.defaultWeight = 1f; capa.blendingMode = AnimatorLayerBlendingMode.Override;
+            ctrl.layers = capas;
+            var sm = ctrl.layers[capas.Length - 1].stateMachine;
+            var nada = sm.AddState("Nada"); sm.defaultState = nada; nada.writeDefaultValues = false;
+            if (bloqueo)
+            {
+                var cubrir = sm.AddState("Cubrir"); cubrir.motion = bloqueo;
+                cubrir.timeParameterActive = true; cubrir.timeParameter = "PoseGuardia";
+                var a = nada.AddTransition(cubrir); a.AddCondition(AnimatorConditionMode.If, 0, "Block"); a.duration = 0.08f; a.hasExitTime = false;
+                var b = cubrir.AddTransition(nada); b.AddCondition(AnimatorConditionMode.IfNot, 0, "Block"); b.duration = 0.15f; b.hasExitTime = false;
+                b.AddCondition(AnimatorConditionMode.IfNot, 0, "Dead");
+            }
+            if (parry)
+            {
+                var st = sm.AddState("Parry"); st.motion = parry; st.speed = 1.4f;
+                var ida = sm.AddAnyStateTransition(st); ida.AddCondition(AnimatorConditionMode.If, 0, "Parry"); ida.duration = 0.05f; ida.canTransitionToSelf = false;
+                var vuelta = st.AddTransition(nada); vuelta.hasExitTime = true; vuelta.exitTime = 0.8f; vuelta.duration = 0.15f;
+            }
         }
 
         // ---------- Escena rápida para probar un personaje en el editor ----------
@@ -302,9 +353,21 @@ namespace Forja3D.EditorTools
             if (a == null) return;
             var clips = mi.defaultClipAnimations;
             if (clips == null || clips.Length == 0) return;
-            // Nombra los clips en el mismo orden en que el conector los pidió
-            string[] nombres = a.clips != null && a.clips.Length == clips.Length ? a.clips : clips.Length == 1 ? new[] { a.nombre } : null;
-            if (nombres == null && a.clips != null && a.clips.Length > 0)
+            // Tripo exporta los clips por nombre inglés y en orden alfabético (fall, hurt, idle, slash, walk):
+            // se renombran por su nombre real, nunca por posición.
+            var tripo = new Dictionary<string, string> { ["idle"] = "idle", ["walk"] = "caminar", ["run"] = "correr", ["slash"] = "ataque",
+                ["attack"] = "ataque", ["hurt"] = "golpeado", ["hit"] = "golpeado", ["fall"] = "muerte", ["die"] = "muerte", ["death"] = "muerte", ["jump"] = "saltar" };
+            string NombreTripo(string n)
+            {
+                var corto = n.Contains("|") ? n.Substring(n.LastIndexOf('|') + 1) : n;
+                corto = corto.ToLowerInvariant().Trim();
+                return tripo.TryGetValue(corto, out var es) ? es : null;
+            }
+            string[] nombres = null;
+            if (Forja3DImporter.EsTripo(m) && clips.Any(c => NombreTripo(c.name) != null))
+                nombres = clips.Select(c => NombreTripo(c.name) ?? c.name).ToArray();
+            else nombres = a.clips != null && a.clips.Length == clips.Length ? a.clips : clips.Length == 1 ? new[] { a.nombre } : null;
+            if (nombres == null && a.clips != null && a.clips.Length > 0 && !Forja3DImporter.EsTripo(m))
             {
                 // Tripo nombra los clips en lote NlaTrack, NlaTrack.001… en el orden pedido
                 var nla = clips.Select((c, idx) => (c, idx)).Where(x => x.c.name.Contains("NlaTrack")).ToList();
