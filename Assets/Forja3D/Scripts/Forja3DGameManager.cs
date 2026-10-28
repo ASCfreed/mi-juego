@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace Forja3D
 {
-    public enum Objetivo { Meta, Enemigos, Monedas, Jefe }
+    public enum Objetivo { Meta, Enemigos, Monedas, Jefe, Dialogos }
 
     public class Forja3DGameManager : MonoBehaviour
     {
@@ -14,12 +14,13 @@ namespace Forja3D
         public Objetivo objetivo = Objetivo.Meta;
         public Linea[] intro;   // narración/diálogo al empezar el nivel
         public Linea[] salida;  // al completar el nivel, antes de pasar al siguiente
+        public Linea[] recompensaDialogo; // al vencer al último jefe, si el nivel da un arma nueva
 
         public static bool Terminado { get; private set; }
         // Bloquea al jugador y a los enemigos (fin del nivel o diálogo abierto)
         public static bool Bloqueado => Terminado || Forja3DDialogue.Activo;
         static Forja3DGameManager inst;
-        static int enemigos, derrotados, monedas, recogidas, jefes, jefesDerrotados;
+        static int enemigos, derrotados, monedas, recogidas, jefes, jefesDerrotados, claves, clavesOidas;
         static System.Collections.Generic.List<Forja3DHealth> vidasJefe = new System.Collections.Generic.List<Forja3DHealth>();
         static System.Collections.Generic.List<string> nombresJefe = new System.Collections.Generic.List<string>();
 
@@ -41,14 +42,30 @@ namespace Forja3D
         public static void Mensaje(string m) { if (inst && inst.textoAviso) { inst.textoAviso.text = m; inst.avisoHasta = Time.unscaledTime + 1.1f; } }
         // Destello rojo en los bordes al recibir daño
         public static void Herido() { if (inst) inst.vinetaAlfa = 0.55f; }
-        public static void JefeDerrotado() { jefesDerrotados++; inst?.Aviso("¡Jefe derrotado!"); inst?.Revisar(); }
+        public static void JefeDerrotado()
+        {
+            jefesDerrotados++; inst?.Aviso("¡Jefe derrotado!"); inst?.Revisar();
+            // Último jefe caído: si el nivel da un arma (la hoz de la Muerte), Dante la toma
+            if (inst && jefesDerrotados >= jefes && inst.controlJugador && inst.controlJugador.TieneRecompensa)
+                inst.StartCoroutine(inst.Recompensa());
+        }
+        System.Collections.IEnumerator Recompensa()
+        {
+            yield return new WaitForSecondsRealtime(2.2f);
+            if (Terminado) yield break;
+            controlJugador.CambiarARecompensa();
+            Forja3DDialogue.Mostrar(recompensaDialogo);
+        }
+        // Personajes "clave" (Francesca, Paolo…): hay que escucharlos para abrir la meta
+        public static void RegistrarClave() => claves++;
+        public static void ClaveOida() { clavesOidas++; inst?.Revisar(); }
         public static void RegistrarMoneda() => monedas++;
         public static void MonedaRecogida() { recogidas++; inst?.Revisar(); }
         public static void MetaAlcanzada()
         {
             if (inst == null || Terminado) return;
             if (inst.objetivo == Objetivo.Meta || inst.Cumplido()) inst.Ganar();
-            else inst.Aviso(inst.objetivo == Objetivo.Enemigos ? "¡Derrota a todos los enemigos primero!" : inst.objetivo == Objetivo.Jefe ? "¡Derrota al jefe primero!" : "¡Recoge todas las monedas primero!");
+            else inst.Aviso(inst.objetivo == Objetivo.Enemigos ? "¡Derrota a todos los enemigos primero!" : inst.objetivo == Objetivo.Jefe ? "¡Derrota al jefe primero!" : inst.objetivo == Objetivo.Dialogos ? "La puerta no se abre… escucha antes a las almas de este círculo" : "¡Recoge todas las monedas primero!");
         }
 
         void Awake()
@@ -56,7 +73,7 @@ namespace Forja3D
             // EXPANSIÓN FUTURA: en PC conviene un menú de pausa (Escape), opciones de gráficos y resolución;
             // en iOS/Android, pausar al salir de la app (OnApplicationPause). Hoy el juego no tiene menú.
             inst = this; Terminado = false;
-            enemigos = derrotados = monedas = recogidas = jefes = jefesDerrotados = 0; vidasJefe.Clear(); nombresJefe.Clear();
+            enemigos = derrotados = monedas = recogidas = jefes = jefesDerrotados = claves = clavesOidas = 0; vidasJefe.Clear(); nombresJefe.Clear();
             Time.timeScale = 1f;
             Application.targetFrameRate = 60; // PC: dejar -1 y usar QualitySettings.vSyncCount = 1
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
@@ -79,6 +96,7 @@ namespace Forja3D
             Objetivo.Enemigos => "\nObjetivo: derrota a todos los enemigos y llega a la meta",
             Objetivo.Monedas => "\nObjetivo: recoge todas las monedas y llega a la meta",
             Objetivo.Jefe => "\nObjetivo: derrota al jefe y llega a la meta",
+            Objetivo.Dialogos => "\nObjetivo: escucha a las almas y cruza la puerta",
             _ => "\nObjetivo: llega a la meta verde",
         };
 
@@ -87,6 +105,7 @@ namespace Forja3D
             Objetivo.Enemigos => derrotados >= enemigos,
             Objetivo.Monedas => recogidas >= monedas,
             Objetivo.Jefe => jefesDerrotados >= jefes,
+            Objetivo.Dialogos => clavesOidas >= claves,
             _ => true,
         };
 

@@ -12,6 +12,7 @@ namespace Forja3D
         public bool repetir = false;
         public bool seguir = false;
         public float distancia = 3f;
+        public bool clave = false; // hay que escucharlo para abrir la meta (objetivo "dialogos")
 
         Transform jugador;
         Animator anim;
@@ -26,7 +27,9 @@ namespace Forja3D
             if (anim) anim.applyRootMotion = false;
             Forja3DSinRaiz.Poner(anim);
             agente = GetComponent<NavMeshAgent>();
+            if (clave) Forja3DGameManager.RegistrarClave();
         }
+        bool contado;
 
         void Update()
         {
@@ -49,7 +52,7 @@ namespace Forja3D
             {
                 hablado = !repetir;
                 Forja3DAnim.Trigger(anim, "Alert");
-                Forja3DDialogue.Mostrar(dialogo);
+                Forja3DDialogue.Mostrar(dialogo, () => { if (clave && !contado) { contado = true; Forja3DGameManager.ClaveOida(); } });
             }
             if (repetir && dist > distancia * 1.5f) hablado = false;
         }

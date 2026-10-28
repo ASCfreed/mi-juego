@@ -398,20 +398,39 @@ namespace Forja3D
             transform.localScale = esc;
         }
 
+        // Apoya el cadáver en el suelo: mide el vértice más bajo de la malla ya deformada (los límites del
+        // renderer son una caja y lo dejaban flotando)
+        void Apoyar()
+        {
+            float bajo = float.MaxValue;
+            var m = new Mesh();
+            foreach (var sk in GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                sk.BakeMesh(m, true);
+                foreach (var v in m.vertices) bajo = Mathf.Min(bajo, sk.transform.TransformPoint(v).y);
+            }
+            foreach (var mf in GetComponentsInChildren<MeshFilter>())
+                if (mf.sharedMesh && mf.GetComponent<Renderer>() && mf.GetComponent<Renderer>().enabled && !mf.GetComponentInParent<ParticleSystem>())
+                    foreach (var v in mf.sharedMesh.vertices) bajo = Mathf.Min(bajo, mf.transform.TransformPoint(v).y);
+            Destroy(m);
+            if (bajo == float.MaxValue) return;
+            float suelo = transform.position.y;
+            if (Physics.Raycast(transform.position + Vector3.up * 3f, Vector3.down, out var hit, 8f, ~0, QueryTriggerInteraction.Ignore)) suelo = hit.point.y;
+            transform.position += Vector3.up * (suelo - bajo + 0.02f);
+        }
+
         IEnumerator Caida()
         {
             // Las fieras caen de costado; los bípedos, de espaldas
             bool cuadrupedo = voz == "fiera";
             var rot = transform.rotation; var fin = rot * (cuadrupedo ? Quaternion.Euler(0, 0, 88f) : Quaternion.Euler(-80f, 0, 0));
-            var ini = transform.position; var rend = GetComponentInChildren<Renderer>();
-            float ancho = rend ? Mathf.Min(rend.bounds.size.x, rend.bounds.size.z) : 0.6f;
             for (float t = 0; t < 1f; t += Time.deltaTime / 0.6f)
             {
                 transform.rotation = Quaternion.Slerp(rot, fin, t * t);
-                if (cuadrupedo) transform.position = ini + Vector3.up * (ancho * 0.45f * Mathf.Sin(t * Mathf.PI * 0.5f)); // no se hunde al rodar
                 yield return null;
             }
             transform.rotation = fin;
+            Apoyar();
             Forja3DAudio.Sonar("caida_cuerpo", transform.position, 0.7f);
         }
 
@@ -441,6 +460,8 @@ namespace Forja3D
             if (agente.isOnNavMesh) agente.ResetPath();
             agente.enabled = false;
             foreach (var c in GetComponentsInChildren<Collider>()) c.enabled = false;
+            var aura = transform.Find("Aura");
+            if (aura) { foreach (var ps in aura.GetComponentsInChildren<ParticleSystem>()) ps.Stop(); var l = aura.GetComponent<Light>(); if (l) l.enabled = false; }
             Forja3DAudio.Sonar("muerte_" + voz, Cabeza, 1f, 0.1f);
             Forja3DFX.Sangre(transform.position + Vector3.up, Vector3.up, esJefe ? 60 : 30);
             // El parámetro "Dead" existe siempre; lo que importa es si hay un estado con clip de muerte

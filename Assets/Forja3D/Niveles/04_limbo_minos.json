@@ -1,5 +1,5 @@
 {
-  "titulo": "II · El Limbo y Minos",
+  "titulo": "III · El Limbo y Minos",
   "celda": 3,
   "mapa": [
     "####################",
@@ -25,19 +25,25 @@
       "nombre": "",
       "seguir": false,
       "dialogo": [],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     },
     {
       "simbolo": "J",
       "tipo": "jefe",
       "modelo": "minos",
-      "vida": 30,
+      "vida": 36,
       "escala": 1,
       "color": "",
       "nombre": "Minos",
       "seguir": false,
       "dialogo": [],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     },
     {
       "simbolo": "V",
@@ -66,15 +72,18 @@
           "texto": "Sigue. Abajo nos espera quien juzga a las almas."
         }
       ],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": true,
+      "clave": false
     },
     {
       "simbolo": "H",
       "tipo": "npc",
-      "modelo": "virgilio",
+      "modelo": "homero",
       "vida": 2,
-      "escala": 1.05,
-      "color": "#d9d2c0",
+      "escala": 1,
+      "color": "",
       "nombre": "Homero",
       "seguir": false,
       "dialogo": [
@@ -87,13 +96,16 @@
           "texto": "Y me hicieron todavía más honor, pues me pusieron en su círculo, y fui el sexto entre tanto saber."
         }
       ],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     }
   ],
   "jugador": {
     "modelo": "dante",
     "vida": 6,
-    "arma": "espada"
+    "arma": "hoz"
   },
   "intro": [
     {
@@ -115,6 +127,9 @@
       "texto": "¿Por qué también tú gritas? No impidas su viaje fatal: así se quiere allá donde se puede lo que se quiere."
     }
   ],
+  "recompensa_arma": "",
+  "recompensa_nombre": "",
+  "recompensa_dialogo": [],
   "terreno": {
     "tipo": "pasto",
     "colinas": 0.4,

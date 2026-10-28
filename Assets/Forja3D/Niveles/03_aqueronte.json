@@ -1,0 +1,134 @@
+{
+  "titulo": "II · El Aqueronte",
+  "celda": 3,
+  "mapa": [
+    "####################",
+    "#P..E.....E....E...#",
+    "#.V....R.....R.....#",
+    "#...E......E....R..#",
+    "#.R....E.......E...#",
+    "#......R....K......#",
+    "#..R..........R...M#",
+    "#~~~~~~~~~~~~~~~~B~#",
+    "#~~~~~~~~~~~~~~~~~~#",
+    "####################"
+  ],
+  "leyenda": [
+    {
+      "simbolo": "E",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "Ignavo",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
+    },
+    {
+      "simbolo": "K",
+      "tipo": "jefe",
+      "modelo": "caron",
+      "vida": 34,
+      "escala": 1,
+      "color": "",
+      "nombre": "Carón",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
+    },
+    {
+      "simbolo": "B",
+      "tipo": "decoracion",
+      "modelo": "barca",
+      "vida": 2,
+      "escala": 2.5,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
+    },
+    {
+      "simbolo": "V",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Virgilio",
+      "seguir": true,
+      "dialogo": [
+        {
+          "quien": "Virgilio",
+          "texto": "Son las almas tristes de quienes vivieron sin infamia y sin alabanza. El cielo las echó; el Infierno no las quiere."
+        }
+      ],
+      "voz": "",
+      "aura": "",
+      "fantasma": true,
+      "clave": false
+    }
+  ],
+  "jugador": {
+    "modelo": "dante",
+    "vida": 6,
+    "arma": "hoz"
+  },
+  "intro": [
+    {
+      "quien": "",
+      "texto": "Vimos gente a la orilla de un gran río. Y he aquí que venía hacia nosotros, en una barca, un viejo cano de pelo antiguo."
+    },
+    {
+      "quien": "Carón",
+      "texto": "¡Ay de vosotras, almas perversas! No esperéis ver nunca el cielo: vengo a llevaros a la otra orilla, a las tinieblas eternas."
+    },
+    {
+      "quien": "Carón",
+      "texto": "Y tú, alma viva, apártate de esos que están muertos."
+    },
+    {
+      "quien": "Virgilio",
+      "texto": "Caronte, non ti crucciare: vuolsi così colà dove si puote ciò che si vuole, e più non dimandare."
+    },
+    {
+      "quien": "Carón",
+      "texto": "¡Ningún vivo pisará mi barca!"
+    }
+  ],
+  "salida": [
+    {
+      "quien": "",
+      "texto": "Las almas suben a la barca como hojas que caen en otoño. Dante y su guía cruzan el agua oscura."
+    },
+    {
+      "quien": "",
+      "texto": "La tierra tembló. Un relámpago bermejo. Y caí como el hombre a quien el sueño atrapa."
+    }
+  ],
+  "recompensa_arma": "",
+  "recompensa_nombre": "",
+  "recompensa_dialogo": [],
+  "terreno": {
+    "tipo": "piedra",
+    "colinas": 0.6,
+    "semilla": 7
+  },
+  "objetivo": "jefe",
+  "cielo": "#24120e",
+  "niebla": true,
+  "altura_muros": 5,
+  "color_muros": "#2a1f1c",
+  "ambiente": "infierno"
+}

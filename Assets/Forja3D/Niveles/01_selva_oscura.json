@@ -25,7 +25,10 @@
       "nombre": "",
       "seguir": false,
       "dialogo": [],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     },
     {
       "simbolo": "A",
@@ -37,7 +40,10 @@
       "nombre": "La pantera",
       "seguir": false,
       "dialogo": [],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     },
     {
       "simbolo": "L",
@@ -49,7 +55,10 @@
       "nombre": "El león",
       "seguir": false,
       "dialogo": [],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     },
     {
       "simbolo": "W",
@@ -61,7 +70,10 @@
       "nombre": "La loba",
       "seguir": false,
       "dialogo": [],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     },
     {
       "simbolo": "V",
@@ -98,7 +110,10 @@
           "texto": "Ve. Que un solo querer nos guíe a los dos. Tú, guía; tú, señor; tú, maestro."
         }
       ],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": true,
+      "clave": false
     }
   ],
   "jugador": {
@@ -138,6 +153,9 @@
       "texto": "Y echaron a andar. Detrás quedó la selva; delante, la puerta."
     }
   ],
+  "recompensa_arma": "",
+  "recompensa_nombre": "",
+  "recompensa_dialogo": [],
   "terreno": {
     "tipo": "pasto",
     "colinas": 0.9,

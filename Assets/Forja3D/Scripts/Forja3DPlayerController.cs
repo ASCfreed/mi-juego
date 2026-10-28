@@ -39,6 +39,21 @@ namespace Forja3D
 
         [Header("Cámara")]
         public bool crearCamaraAutomatica = true;
+        public string nombreRecompensa = "";
+
+        // ── Arma ganada (p. ej. la hoz de la Muerte): ya está en la mano, oculta, desde el editor ──
+        Transform BuscarHijo(string n) { foreach (var t in GetComponentsInChildren<Transform>(true)) if (t.name == n) return t; return null; }
+        public bool TieneRecompensa => BuscarHijo("ArmaRecompensa");
+        public void CambiarARecompensa()
+        {
+            var nueva = BuscarHijo("ArmaRecompensa"); if (!nueva) return;
+            var vieja = BuscarHijo("Arma"); if (vieja) Destroy(vieja.gameObject);
+            nueva.gameObject.SetActive(true); nueva.name = "Arma";
+            alcanceAtaque *= 1.35f; // un arma de asta llega más lejos
+            Forja3DFX.Chispas(nueva.position, 40);
+            Forja3DAudio.Sonar("victoria", nueva.position, 0.6f);
+            if (!string.IsNullOrEmpty(nombreRecompensa)) Forja3DGameManager.Mensaje(nombreRecompensa);
+        }
 
         public float Estamina { get; private set; }
         public bool Cubriendo { get; private set; }

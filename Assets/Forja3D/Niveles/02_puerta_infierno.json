@@ -1,17 +1,17 @@
 {
-  "titulo": "I · La Puerta y el Aqueronte",
+  "titulo": "I · La puerta del Infierno",
   "celda": 3,
   "mapa": [
     "####################",
     "#P.V..E.....E......#",
     "#..R.......R.......#",
-    "#.....E...J...E..R.#",
+    "#.....E.......E..R.#",
     "#.R......C.........#",
     "#########..#########",
     "#...E..........E...#",
     "#.R.....R....R.....#",
-    "#....E....K.....E..#",
-    "#..R....B....R....M#",
+    "#....E....J.....E..#",
+    "#..R.........R....M#",
     "####################"
   ],
   "leyenda": [
@@ -25,7 +25,10 @@
       "nombre": "",
       "seguir": false,
       "dialogo": [],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     },
     {
       "simbolo": "J",
@@ -37,31 +40,10 @@
       "nombre": "La Muerte",
       "seguir": false,
       "dialogo": [],
-      "voz": ""
-    },
-    {
-      "simbolo": "K",
-      "tipo": "jefe",
-      "modelo": "caron",
-      "vida": 26,
-      "escala": 1,
-      "color": "",
-      "nombre": "Carón",
-      "seguir": false,
-      "dialogo": [],
-      "voz": ""
-    },
-    {
-      "simbolo": "B",
-      "tipo": "decoracion",
-      "modelo": "barca",
-      "vida": 2,
-      "escala": 2.5,
-      "color": "",
-      "nombre": "",
-      "seguir": false,
-      "dialogo": [],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false
     },
     {
       "simbolo": "V",
@@ -82,7 +64,10 @@
           "texto": "Hemos llegado al lugar donde verás a la gente dolorosa que ha perdido el bien del intelecto."
         }
       ],
-      "voz": ""
+      "voz": "",
+      "aura": "",
+      "fantasma": true,
+      "clave": false
     }
   ],
   "jugador": {
@@ -110,16 +95,28 @@
   ],
   "salida": [
     {
-      "quien": "Carón",
-      "texto": "¡Guai a voi, anime prave! ¡Tú, alma viva, apártate de los muertos!"
+      "quien": "",
+      "texto": "Suspiros, llantos y altos gemidos resonaban por el aire sin estrellas."
     },
     {
       "quien": "Virgilio",
-      "texto": "Caronte, non ti crucciare: vuolsi così colà dove si puote ciò che si vuole, e più non dimandare."
-    },
+      "texto": "Estos son los que vivieron sin infamia y sin alabanza. No hablemos de ellos: mira y pasa."
+    }
+  ],
+  "recompensa_arma": "hoz",
+  "recompensa_nombre": "LA HOZ DE LA MUERTE",
+  "recompensa_dialogo": [
     {
       "quien": "",
-      "texto": "La tierra tembló. Un relámpago bermejo. Y caí como el hombre a quien el sueño atrapa."
+      "texto": "La Muerte se deshace en ceniza. Su hoz queda clavada en la tierra, todavía tibia."
+    },
+    {
+      "quien": "Dante",
+      "texto": "Si he de cruzar este reino, no lo haré desarmado."
+    },
+    {
+      "quien": "Virgilio",
+      "texto": "Tómala, pues. Pero no es la hoz la que te sacará de aquí, sino el camino."
     }
   ],
   "terreno": {

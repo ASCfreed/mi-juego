@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; }
     [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; }
     [Serializable]
     public class JuegoDef
@@ -40,6 +40,9 @@ namespace Forja3D.EditorTools
         public string ambiente = "infierno";
         public Linea[] intro;
         public Linea[] salida;
+        public string recompensa_arma;   // p. ej. "hoz": sustituye al arma al vencer a todos los jefes
+        public string recompensa_nombre; // texto: "LA HOZ DE LA MUERTE"
+        public Linea[] recompensa_dialogo;
     }
 
     public static class Forja3DLevelBuilder
@@ -111,6 +114,7 @@ namespace Forja3D.EditorTools
             ['P'] = new Simbolo { tipo = "jugador" }, ['M'] = new Simbolo { tipo = "meta" }, ['E'] = new Simbolo { tipo = "enemigo" },
             ['J'] = new Simbolo { tipo = "jefe", vida = 15, escala = 2f },
             ['C'] = new Simbolo { tipo = "moneda" }, ['T'] = new Simbolo { tipo = "arbol" }, ['R'] = new Simbolo { tipo = "roca" },
+            ['~'] = new Simbolo { tipo = "rio" },
         };
 
         static string Construir(Nivel n, string id)
@@ -172,6 +176,50 @@ namespace Forja3D.EditorTools
                     muro.transform.position = centro + Vector3.up * (altoCol / 2f - 1f);
                     muro.AddComponent<BoxCollider>().size = new Vector3((fin - col + 1) * c, altoCol, c);
                     GameObjectUtility.SetStaticEditorFlags(muro, StaticEditorFlags.NavigationStatic);
+                    col = fin;
+                }
+
+            // Ríos (Aqueronte): agua oscura y rojiza que no se puede cruzar a pie; solo en barca
+            Material matRio = null;
+            for (int f = 0; f < filas; f++)
+                for (int col = 0; col < cols; col++)
+                {
+                    if (Tipo(n, leyenda, f, col) != "rio") continue;
+                    int fin = col;
+                    while (fin + 1 < cols && Tipo(n, leyenda, f, fin + 1) == "rio") fin++;
+                    var centro = (Pos(f, col) + Pos(f, fin)) / 2f;
+                    float largoRio = (fin - col + 1) * c;
+                    var bloqueo = new GameObject("RioColision"); bloqueo.transform.SetParent(nivel.transform);
+                    bloqueo.transform.position = new Vector3(centro.x, 1.5f, centro.z);
+                    bloqueo.AddComponent<BoxCollider>().size = new Vector3(largoRio, 4f, c);
+                    GameObjectUtility.SetStaticEditorFlags(bloqueo, StaticEditorFlags.NavigationStatic);
+                    if (!matRio)
+                    {
+                        matRio = new Material(Shader.Find("Standard"));
+                        matRio.SetColor("_Color", new Color(0.09f, 0.015f, 0.015f));
+                        matRio.SetFloat("_Glossiness", 0.93f); matRio.SetFloat("_Metallic", 0.2f);
+                        matRio.EnableKeyword("_EMISSION"); matRio.SetColor("_EmissionColor", new Color(0.32f, 0.04f, 0.015f));
+                        Guardar(matRio, $"rio_{id}");
+                    }
+                    var agua = GameObject.CreatePrimitive(PrimitiveType.Quad); agua.name = "Rio";
+                    UnityEngine.Object.DestroyImmediate(agua.GetComponent<Collider>());
+                    agua.transform.SetParent(nivel.transform);
+                    agua.transform.position = new Vector3(centro.x, centro.y + 0.12f, centro.z);
+                    agua.transform.rotation = Quaternion.Euler(90, 0, 0);
+                    agua.transform.localScale = new Vector3(largoRio + c * 0.2f, c * 1.08f, 1f);
+                    agua.GetComponent<MeshRenderer>().sharedMaterial = matRio;
+                    // Vapor que sube del río
+                    var vapor = new GameObject("Vapor"); vapor.transform.SetParent(agua.transform, false);
+                    var ps = vapor.AddComponent<ParticleSystem>(); ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    var main = ps.main; main.startLifetime = 3f; main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.6f);
+                    main.startSize = new ParticleSystem.MinMaxCurve(0.8f, 2f); main.maxParticles = 60; main.scalingMode = ParticleSystemScalingMode.Shape;
+                    main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.35f, 0.12f, 0.1f, 0.25f), new Color(0.2f, 0.06f, 0.06f, 0.35f));
+                    main.simulationSpace = ParticleSystemSimulationSpace.World;
+                    var em = ps.emission; em.rateOverTime = 4f * (fin - col + 1);
+                    var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Rectangle;
+                    vapor.transform.localRotation = Quaternion.Euler(180, 0, 0); // el eje Z local queda hacia arriba: emite hacia el cielo
+                    vapor.GetComponent<ParticleSystemRenderer>().sharedMaterial = MatParticula();
+                    ps.Play();
                     col = fin;
                 }
 
@@ -250,7 +298,8 @@ namespace Forja3D.EditorTools
             var gm = new GameObject("Forja3D").AddComponent<Forja3DGameManager>();
             gm.titulo = n.titulo;
             gm.intro = n.intro; gm.salida = n.salida;
-            gm.objetivo = n.objetivo == "enemigos" ? Objetivo.Enemigos : n.objetivo == "monedas" ? Objetivo.Monedas : n.objetivo == "jefe" ? Objetivo.Jefe : Objetivo.Meta;
+            gm.objetivo = n.objetivo == "enemigos" ? Objetivo.Enemigos : n.objetivo == "monedas" ? Objetivo.Monedas : n.objetivo == "jefe" ? Objetivo.Jefe : n.objetivo == "dialogos" ? Objetivo.Dialogos : Objetivo.Meta;
+            gm.recompensaDialogo = n.recompensa_dialogo;
 
             string ruta = $"{RutaGenerado}/Escenas/{id}.unity";
             EditorSceneManager.SaveScene(escena, ruta);
@@ -602,8 +651,8 @@ namespace Forja3D.EditorTools
         static readonly Dictionary<string, float> Alturas = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
         {
             ["dante"] = 1.8f, ["virgilio"] = 1.82f, ["francesca"] = 1.68f, ["paolo"] = 1.8f, ["condenado"] = 1.78f,
-            ["muerte"] = 3.0f, ["caron"] = 2.7f, ["minos"] = 2.9f,
-            ["pantera"] = 1.45f, ["leon"] = 1.85f, ["loba"] = 1.5f, // a la cruz; exageradas a propósito
+            ["muerte"] = 3.0f, ["caron"] = 5.4f, ["minos"] = 5.6f, ["homero"] = 1.78f, // Carón y Minos: titanes (≈7 m con EscalaJefe)
+            ["pantera"] = 1.9f, ["leon"] = 2.4f, ["loba"] = 1.9f, // a la cruz; exageradas a propósito (la loba ×1,3 por jefa)
         };
         // Los jefes se exageran un 30 % para que impongan
         const float EscalaJefe = 1.3f;
@@ -660,22 +709,32 @@ namespace Forja3D.EditorTools
             var cc = g.GetComponent<CharacterController>();
             if (!cc) { cc = g.AddComponent<CharacterController>(); cc.height = 2f; cc.radius = 0.4f; cc.center = Vector3.up; }
             var h = g.AddComponent<Forja3DHealth>(); h.esJugador = true; h.vidaMaxima = Mathf.Max(1, n.jugador?.vida ?? 5);
-            g.AddComponent<Forja3DPlayerController>().crearCamaraAutomatica = false;
+            var control = g.AddComponent<Forja3DPlayerController>(); control.crearCamaraAutomatica = false;
+            var armaIni = n.jugador?.arma ?? "";
+            if (armaIni.Contains("hoz") || armaIni.Contains("guadana")) control.alcanceAtaque *= 1.35f;
             Arma(g, !string.IsNullOrEmpty(n.jugador?.arma) ? n.jugador.arma : Forja3DImporter.RutaPrefab("espada") ? "espada" : null);
+            // Arma que se gana al vencer al jefe del nivel (la hoz de la Muerte): queda preparada y oculta
+            if (!string.IsNullOrEmpty(n.recompensa_arma) && Forja3DImporter.RutaPrefab(n.recompensa_arma))
+            {
+                var premio = Arma(g, n.recompensa_arma, "ArmaRecompensa");
+                if (premio) { premio.SetActive(false); var pc = g.GetComponent<Forja3DPlayerController>(); pc.nombreRecompensa = n.recompensa_nombre ?? ""; }
+            }
             if (Forja3DImporter.RutaPrefab("escudo")) Escudo(g, "escudo");
         }
 
         // Coloca un arma generada (p. ej. "espada") en la mano derecha de un humanoide.
         // Detecta solo el eje largo y la empuñadura (el extremo cercano a la guarda, la parte más ancha),
         // y la orienta hacia delante del personaje en su pose de referencia (T-pose).
-        static void Arma(GameObject portador, string modelo)
+        static GameObject Arma(GameObject portador, string modelo, string nombre = "Arma")
         {
-            if (string.IsNullOrEmpty(modelo)) return;
+            if (string.IsNullOrEmpty(modelo)) return null;
+            // Hoz/guadaña: arma de asta (≈1,9 m), la hoja es el extremo ANCHO y lejano; se empuña por el mango
+            bool asta = modelo.Contains("hoz") || modelo.Contains("guadana") || modelo.Contains("lanza");
             var anim = portador.GetComponentInChildren<Animator>();
             var mano = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
             var antebrazo = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightLowerArm) : null;
             var arma = InstanciarModelo(modelo);
-            if (!mano || !arma) { if (arma) UnityEngine.Object.DestroyImmediate(arma); Debug.LogWarning($"[Forja3D] No se pudo poner el arma '{modelo}'."); return; }
+            if (!mano || !arma) { if (arma) UnityEngine.Object.DestroyImmediate(arma); Debug.LogWarning($"[Forja3D] No se pudo poner el arma '{modelo}'."); return null; }
             foreach (var c in arma.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(c);
             arma.transform.position = Vector3.zero; arma.transform.rotation = Quaternion.identity; arma.transform.localScale = Vector3.one;
 
@@ -685,7 +744,7 @@ namespace Forja3D.EditorTools
                 if (mf.sharedMesh) foreach (var v in mf.sharedMesh.vertices) pts.Add(arma.transform.InverseTransformPoint(mf.transform.TransformPoint(v)));
             foreach (var sk in arma.GetComponentsInChildren<SkinnedMeshRenderer>())
                 if (sk.sharedMesh) foreach (var v in sk.sharedMesh.vertices) pts.Add(arma.transform.InverseTransformPoint(sk.transform.TransformPoint(v)));
-            if (pts.Count == 0) { UnityEngine.Object.DestroyImmediate(arma); return; }
+            if (pts.Count == 0) { UnityEngine.Object.DestroyImmediate(arma); return null; }
             var min = pts[0]; var max = pts[0];
             foreach (var q in pts) { min = Vector3.Min(min, q); max = Vector3.Max(max, q); }
             var tam = max - min;
@@ -705,24 +764,32 @@ namespace Forja3D.EditorTools
             bool empunaduraEnMin = guarda < B / 2;                // la empuñadura está en el extremo más cercano a la guarda
             float tGuarda = (guarda + 0.5f) / B;
             float tAgarre = empunaduraEnMin ? tGuarda * 0.5f : 1f - (1f - tGuarda) * 0.5f;
+            if (asta)
+            {
+                // La hoja (lo más ancho) va lejos de la mano: se agarra a un 30 % desde el otro extremo
+                bool hojaEnMax = guarda >= B / 2;
+                tAgarre = hojaEnMax ? 0.3f : 0.7f;
+                empunaduraEnMin = hojaEnMax;
+            }
             var agarre = centro; agarre[eje] = min[eje] + tAgarre * largo;
             var haciaPunta = Vector3.zero; haciaPunta[eje] = empunaduraEnMin ? 1f : -1f;
 
             // Escala: 1,1 m de largo para un personaje de 1,8 m
             float escPortador = portador.transform.lossyScale.y;
-            float k = 0.95f * escPortador / largo;
+            float k = (asta ? 1.9f : 0.95f) * escPortador / largo;
             arma.transform.localScale = Vector3.one * k;
             // Orienta la hoja hacia delante y un poco hacia arriba
             // En T-pose la palma mira abajo y el pulgar hacia delante: la hoja sale en la dirección del pulgar
-            var destino = portador.transform.forward;
+            var destino = asta ? (portador.transform.forward + portador.transform.up * 0.6f).normalized : portador.transform.forward;
             arma.transform.rotation = Quaternion.FromToRotation(haciaPunta, destino);
             // Puño: un poco más allá del hueso de la mano, en la dirección del brazo
             var dirBrazo = antebrazo ? (mano.position - antebrazo.position).normalized : portador.transform.right;
             var puno = mano.position + dirBrazo * 0.085f * escPortador - portador.transform.up * 0.03f * escPortador;
             arma.transform.position += puno - arma.transform.TransformPoint(agarre);
             arma.transform.SetParent(mano, true);
-            arma.name = "Arma";
+            arma.name = nombre;
             GameObjectUtility.SetStaticEditorFlags(arma, (StaticEditorFlags)0);
+            return arma;
         }
 
         // Escudo en el antebrazo izquierdo: la cara (eje más fino del modelo) mira hacia fuera del brazo
@@ -777,6 +844,9 @@ namespace Forja3D.EditorTools
             string m = (s.modelo ?? "").ToLowerInvariant();
             bool fiera = m.Contains("pantera") || m.Contains("leon") || m.Contains("lob") || m.Contains("perro") || m.Contains("cerbero");
             e.voz = !string.IsNullOrEmpty(s.voz) ? s.voz : fiera ? "fiera" : jefe ? "jefe" : "condenado";
+            // Aura del pecado (campo "aura" del nivel, o el color de cada fiera por defecto)
+            string auraHex = !string.IsNullOrEmpty(s.aura) ? s.aura : m.Contains("pantera") ? "#ff2a8a" : m.Contains("leon") ? "#ffb62e" : m.Contains("lob") ? "#9b3cff" : "";
+            if (!string.IsNullOrEmpty(auraHex)) Aura(g, Hex(auraHex, Color.white), id, AlturaDe(s.modelo, jefe ? "jefe" : "enemigo", fiera) * esc);
             if (fiera) { e.velocidad = 3.6f; e.radioAtaque = Mathf.Max(1.5f, AlturaDe(s.modelo, "enemigo", true) * 1.1f) * esc; e.probImparable = 0.3f; }
             if (jefe)
             {
@@ -785,6 +855,63 @@ namespace Forja3D.EditorTools
                 float altoReal = AlturaDe(s.modelo, "jefe", fiera) * esc;
                 e.radioDeteccion = 14f; e.radioAtaque = Mathf.Max(1.5f * esc, altoReal * (fiera ? 1.1f : 0.55f)); e.radioPatrulla = 2f; e.probImparable = 0.25f; // un cuadrúpedo es más largo que alto
             }
+        }
+
+        // Material translúcido (modo Fade del Standard) con un brillo frío: alma de un poeta
+        static void Fantasma(GameObject g, string id, string modelo)
+        {
+            foreach (var r in g.GetComponentsInChildren<Renderer>())
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (!mats[i]) continue;
+                    var m = new Material(mats[i]) { name = $"fantasma_{modelo}_{i}" };
+                    m.shader = Shader.Find("Standard");
+                    m.SetFloat("_Mode", 2f);
+                    m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    m.SetInt("_ZWrite", 0);
+                    m.DisableKeyword("_ALPHATEST_ON"); m.EnableKeyword("_ALPHABLEND_ON"); m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                    m.renderQueue = 3000;
+                    var col = m.HasProperty("_Color") ? m.GetColor("_Color") : Color.white;
+                    m.SetColor("_Color", new Color(col.r * 0.9f, col.g * 0.95f, col.b, 0.5f));
+                    m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", new Color(0.18f, 0.24f, 0.32f));
+                    m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                    Guardar(m, $"fantasma_{id}_{modelo}_{r.GetInstanceID() & 0xffff}_{i}");
+                    mats[i] = m;
+                }
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            var luz = new GameObject("Halo").AddComponent<Light>();
+            luz.transform.SetParent(g.transform, false); luz.transform.localPosition = Vector3.up * 1.2f / Mathf.Max(0.0001f, g.transform.lossyScale.y);
+            luz.type = LightType.Point; luz.color = new Color(0.6f, 0.75f, 1f); luz.range = 4f; luz.intensity = 0.8f; luz.shadows = LightShadows.None;
+        }
+
+        // Aura del pecado que encarna el enemigo: luz de color y chispas que suben del cuerpo
+        static void Aura(GameObject g, Color color, string id, float alto)
+        {
+            var aura = new GameObject("Aura"); aura.transform.SetParent(g.transform, false);
+            float k = Mathf.Max(0.0001f, g.transform.lossyScale.y);
+            aura.transform.localPosition = Vector3.up * (alto * 0.45f / k);
+            aura.transform.localScale = Vector3.one / k;
+            var luz = aura.AddComponent<Light>();
+            luz.type = LightType.Point; luz.color = color; luz.range = alto * 2.2f; luz.intensity = 2.2f; luz.shadows = LightShadows.None;
+            var ps = aura.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.loop = true; main.duration = 2f; main.startLifetime = new ParticleSystem.MinMaxCurve(1.2f, 2.2f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.7f); main.startSize = new ParticleSystem.MinMaxCurve(0.08f * alto / 2f, 0.22f * alto / 2f);
+            main.startColor = new ParticleSystem.MinMaxGradient(color, Color.Lerp(color, Color.white, 0.4f));
+            main.simulationSpace = ParticleSystemSimulationSpace.World; main.maxParticles = 120; main.gravityModifier = -0.15f;
+            var em = ps.emission; em.rateOverTime = 28f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(alto * 0.45f, alto * 0.9f, alto * 0.45f);
+            var col = ps.colorOverLifetime; col.enabled = true;
+            var gr = new Gradient(); gr.SetKeys(new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) }, new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.85f, 0.25f), new GradientAlphaKey(0f, 1f) });
+            col.color = gr;
+            var r = aura.GetComponent<ParticleSystemRenderer>(); r.sharedMaterial = MatParticula(); r.renderMode = ParticleSystemRenderMode.Billboard;
+            ps.Play();
         }
 
         static void Npc(Simbolo s, Vector3 p, Transform padre, string id)
@@ -797,10 +924,12 @@ namespace Forja3D.EditorTools
             var cc = g.GetComponent<CharacterController>();
             float alto = cc ? cc.height : 2f, radio = cc ? cc.radius : 0.4f;
             if (cc) UnityEngine.Object.DestroyImmediate(cc);
-            var col = g.AddComponent<CapsuleCollider>(); col.height = alto; col.radius = radio; col.center = Vector3.up * alto / 2f;
+            // Fantasma (Virgilio): sin colisión y semitransparente; se le puede atravesar
+            if (s.fantasma) Fantasma(g, id, s.modelo);
+            else { var col = g.AddComponent<CapsuleCollider>(); col.height = alto; col.radius = radio; col.center = Vector3.up * alto / 2f; }
             if (s.seguir) { var ag = g.AddComponent<NavMeshAgent>(); ag.height = alto; ag.radius = radio; ag.speed = 3.2f; ag.stoppingDistance = 2f; }
             var npc = g.AddComponent<Forja3DNPC>();
-            npc.nombre = s.nombre ?? ""; npc.dialogo = s.dialogo; npc.seguir = s.seguir;
+            npc.nombre = s.nombre ?? ""; npc.dialogo = s.dialogo; npc.seguir = s.seguir; npc.clave = s.clave;
         }
 
         static void Moneda(Vector3 p, Transform padre, string id)
@@ -833,6 +962,8 @@ namespace Forja3D.EditorTools
                 puerta.transform.localScale *= 5.5f / Mathf.Max(0.01f, b.size.y);
                 b = Forja3DImporter.Limites(puerta);
                 puerta.transform.position += new Vector3(p.x - b.center.x, p.y - b.min.y, p.z - b.center.z);
+                b = Forja3DImporter.Limites(puerta);
+                Portal(g, b, p, id);
             }
             else
             {
@@ -851,6 +982,52 @@ namespace Forja3D.EditorTools
             luz.transform.SetParent(g.transform, false); luz.transform.localPosition = Vector3.up * 2f;
             luz.type = LightType.Point; luz.color = new Color(1f, 0.45f, 0.2f); luz.range = 9f; luz.intensity = 2.2f;
             g.AddComponent<Forja3DGoal>();
+        }
+
+        // Portal oscuro dentro del arco: un velo negro con borde carmesí y humo que gira hacia el centro
+        static void Portal(GameObject meta, Bounds b, Vector3 suelo, string id)
+        {
+            bool anchoEnX = b.size.x >= b.size.z;
+            float ancho = (anchoEnX ? b.size.x : b.size.z) * 0.46f, alto = b.size.y * 0.66f;
+            var velo = GameObject.CreatePrimitive(PrimitiveType.Quad); velo.name = "Portal";
+            UnityEngine.Object.DestroyImmediate(velo.GetComponent<Collider>());
+            velo.transform.SetParent(meta.transform, true);
+            velo.transform.position = new Vector3(b.center.x, suelo.y + alto * 0.5f + 0.05f, b.center.z);
+            velo.transform.rotation = Quaternion.LookRotation(anchoEnX ? Vector3.forward : Vector3.right);
+            velo.transform.localScale = new Vector3(ancho, alto, 1f);
+            // Textura radial: negro absoluto en el centro, carmesí en el borde, transparente fuera
+            const int n = 128; var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "portal" };
+            for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
+                {
+                    float dx = (x - n / 2f) / (n / 2f), dy = (y - n / 2f) / (n / 2f); float d = Mathf.Sqrt(dx * dx + dy * dy);
+                    var c = Color.Lerp(new Color(0.01f, 0f, 0.02f), new Color(0.55f, 0.04f, 0.08f), Mathf.SmoothStep(0.55f, 0.95f, d));
+                    c.a = 1f - Mathf.SmoothStep(0.88f, 1f, d);
+                    tex.SetPixel(x, y, c);
+                }
+            tex.Apply();
+            AssetDatabase.CreateAsset(tex, $"{RutaGenerado}/Datos/portal_{id}.asset");
+            var mat = new Material(Shader.Find("Unlit/Transparent")) { mainTexture = tex };
+            Guardar(mat, $"portal_{id}");
+            var r = velo.GetComponent<MeshRenderer>(); r.sharedMaterial = mat; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // Por detrás también (el quad es de una sola cara)
+            var reverso = UnityEngine.Object.Instantiate(velo, velo.transform.parent); reverso.name = "PortalReverso";
+            reverso.transform.rotation = velo.transform.rotation * Quaternion.Euler(0, 180, 0);
+            // Humo que gira hacia dentro
+            var humo = new GameObject("Remolino"); humo.transform.SetParent(velo.transform, false);
+            var ps = humo.AddComponent<ParticleSystem>(); ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main; main.startLifetime = 2.2f; main.startSpeed = 0f; main.startSize = new ParticleSystem.MinMaxCurve(0.4f, 1.1f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.25f, 0.02f, 0.05f, 0.7f), new Color(0.05f, 0f, 0.08f, 0.9f));
+            main.maxParticles = 150; main.simulationSpace = ParticleSystemSimulationSpace.Local; main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+            var em = ps.emission; em.rateOverTime = 45f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 0.5f; sh.radiusThickness = 0.15f;
+            var vel = ps.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.Local;
+            vel.orbitalZ = new ParticleSystem.MinMaxCurve(1.6f); vel.radial = new ParticleSystem.MinMaxCurve(-0.22f);
+            vel.x = vel.y = vel.z = new ParticleSystem.MinMaxCurve(0f);
+            var col = ps.colorOverLifetime; col.enabled = true;
+            var gr = new Gradient(); gr.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) }, new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(0f, 1f) });
+            col.color = gr;
+            humo.GetComponent<ParticleSystemRenderer>().sharedMaterial = MatParticula();
+            ps.Play();
         }
 
         // Si un modelo llega tumbado (su eje más largo no es el vertical), lo pone de pie
