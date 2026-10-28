@@ -401,6 +401,10 @@ namespace Forja3D.EditorTools
     {
         static readonly string[] EnBucle = { "idle", "caminar", "correr", "walk", "run", "bailar", "combate" };
 
+        // Súbelo cada vez que cambie la forma de importar: Unity solo reimporta los modelos ya importados
+        // (la carpeta Library se guarda en caché entre compilaciones) si cambia esta versión.
+        public override uint GetVersion() => 8;
+
         bool EsNuestro => assetPath.StartsWith(Forja3DImporter.Raiz) && assetPath.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase);
 
         // Materiales de Meshy/Tripo: textura de color + normal; sin mapa metálico (con poca luz se veían negros/planos)
@@ -450,9 +454,11 @@ namespace Forja3D.EditorTools
             var clips = mi.defaultClipAnimations;
             if (clips == null || clips.Length == 0) return;
             // Tripo exporta los clips por nombre inglés y en orden alfabético (fall, hurt, idle, slash, walk):
-            // se renombran por su nombre real, nunca por posición.
+            // se renombran por su nombre real, nunca por posición. Ojo: el "hurt" de Tripo es el jefe tirado en el suelo
+            // todo el clip (la cabeza queda a ~45 % de su altura): no se usa como reacción al golpe; en su lugar
+            // el jefe se sacude (Forja3DEnemy.Sacudida) sin perder la guardia.
             var tripo = new Dictionary<string, string> { ["idle"] = "idle", ["walk"] = "caminar", ["run"] = "correr", ["slash"] = "ataque",
-                ["attack"] = "ataque", ["hurt"] = "golpeado", ["hit"] = "golpeado", ["fall"] = "muerte", ["die"] = "muerte", ["death"] = "muerte", ["jump"] = "saltar" };
+                ["attack"] = "ataque", ["hurt"] = "tumbado", ["hit"] = "golpeado", ["fall"] = "muerte", ["die"] = "muerte", ["death"] = "muerte", ["jump"] = "saltar" };
             string NombreTripo(string n)
             {
                 var corto = n.Contains("|") ? n.Substring(n.LastIndexOf('|') + 1) : n;

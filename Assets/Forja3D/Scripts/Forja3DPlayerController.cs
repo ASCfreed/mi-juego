@@ -46,7 +46,24 @@ namespace Forja3D
 
         CharacterController cc;
         Animator anim;
-        Transform visual;
+        Transform visual, caderas;
+        Vector3 caderasBase, posVisual; float centrarHasta = -1f; bool centrando;
+
+        // La voltereta (Roll_Dodge) avanza ~3 m dentro del propio clip. Ese avance se anula aquí, cada fotograma,
+        // para que el cuerpo quede siempre sobre el CharacterController (que es quien recorre la distancia):
+        // así no hay saltos ni "regresos" al terminar.
+        void LateUpdate()
+        {
+            if (!visual || !caderas) return;
+            if (Time.time < centrarHasta)
+            {
+                visual.localPosition = posVisual;
+                var d = caderas.position - transform.TransformPoint(caderasBase); d.y = 0f;
+                visual.position -= d;
+                centrando = true;
+            }
+            else if (centrando) { visual.localPosition = posVisual; centrando = false; }
+        }
         Forja3DHealth vida;
         Transform cam;
         float vy, velAnim, ultimoMovimiento, ultimoGasto = -9f, inicioCubrir = -9f, proximoPaso, aturdidoHasta;
@@ -64,7 +81,8 @@ namespace Forja3D
             anim = GetComponentInChildren<Animator>();
             visual = anim ? anim.transform : (transform.childCount > 0 ? transform.GetChild(0) : null);
             vida = GetComponent<Forja3DHealth>();
-            CalcularZona(); if (anim) anim.applyRootMotion = false;
+            if (anim) anim.applyRootMotion = false;
+            if (anim && anim.isHuman) caderas = anim.GetBoneTransform(HumanBodyBones.Hips);
             Estamina = estaminaMaxima;
             if (anim) { capaTorso = anim.GetLayerIndex("Torso"); if (capaTorso >= 0) anim.SetLayerWeight(capaTorso, 0f); }
         }
@@ -189,7 +207,8 @@ namespace Forja3D
             proximoChequeo = Time.time + 0.2f;
             if (esquivando) { fueraDesde = -1f; return; }
             bool enSuelo = NavMesh.SamplePosition(transform.position, out var hit, 1.5f, NavMesh.AllAreas);
-            if (enSuelo && cc.isGrounded && Mathf.Abs(hit.position.y - transform.position.y) < 0.8f) ultimoSeguro = hit.position;
+            if (enSuelo && cc.isGrounded && Mathf.Abs(hit.position.y - transform.position.y) < 0.8f) ultimoSeguro = transform.position;
+            if (zonaJugable.size.x < 1f && Time.timeSinceLevelLoad > 1f) CalcularZona();
             if (ultimoSeguro == Vector3.zero) { ultimoSeguro = transform.position; return; }
             var p = transform.position;
             bool cayendo = p.y < ultimoSeguro.y - 4f;
@@ -232,8 +251,13 @@ namespace Forja3D
 
         void Reubicar(Vector3 punto)
         {
+            // Busca el suelo real bajo el punto (la malla de navegación puede quedar un poco por debajo del
+            // terreno; si se coloca a Dante ahí, atraviesa el suelo y cae fuera del mapa)
+            var mascara = ~0;
+            if (Physics.Raycast(punto + Vector3.up * 4f, Vector3.down, out var suelo, 12f, mascara, QueryTriggerInteraction.Ignore) && suelo.collider != cc)
+                punto = suelo.point;
             cc.enabled = false;
-            transform.position = punto + Vector3.up * 0.1f;
+            transform.position = punto + Vector3.up * (cc.skinWidth + 0.15f);
             cc.enabled = true;
             vy = 0f; empuje = Vector3.zero; fueraDesde = -1f;
         }
@@ -344,7 +368,7 @@ namespace Forja3D
             Forja3DAudio.Sonar("esquiva", transform.position + Vector3.up * 0.5f, 0.8f);
             bool clip = Forja3DAnim.Tiene(anim, "Dodge", AnimatorControllerParameterType.Trigger);
             if (clip) Forja3DAnim.Trigger(anim, "Dodge");
-            var offCuerpo = anim && anim.isHuman ? anim.bodyPosition - transform.position : Vector3.zero;
+            if (clip && caderas && visual) { caderasBase = transform.InverseTransformPoint(caderas.position); centrarHasta = Time.time + 1.2f; posVisual = visual.localPosition; }
             const float dur = 0.5f;
             var rotIni = transform.rotation; var rotFin = Quaternion.LookRotation(dir);
             var posVis = visual ? visual.localPosition : Vector3.zero;
@@ -366,13 +390,7 @@ namespace Forja3D
                 yield return null;
             }
             if (visual) { visual.localPosition = posVis; visual.localRotation = rotVis; }
-            // Si el clip desplazó el cuerpo respecto al personaje, mueve al personaje hasta donde quedó el cuerpo
-            // para que al volver a idle no "regrese" al punto de partida.
-            if (clip && anim && anim.isHuman)
-            {
-                var d = anim.bodyPosition - transform.position - offCuerpo; d.y = 0;
-                if (d.magnitude > 0.35f) cc.Move(Vector3.ClampMagnitude(d, 4f));
-            }
+            if (clip) centrarHasta = Time.time + 0.45f; // sigue centrando mientras el clip vuelve a idle
             ultimoSeguro = Vector3.zero; proximoChequeo = 0f;
             esquivando = false;
         }
