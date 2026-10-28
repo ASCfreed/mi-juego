@@ -1,0 +1,22 @@
+{
+  "forja3d": 1,
+  "personaje": false,
+  "biblioteca": false,
+  "archivos": [
+    {
+      "nombre": "accion_158+accion_138+accion_147+accion_178+accion_189+accion_219+accion_97+accion_242+accion_187",
+      "tipo": "animacion",
+      "clips": [
+        "accion_158",
+        "accion_138",
+        "accion_147",
+        "accion_178",
+        "accion_189",
+        "accion_219",
+        "accion_97",
+        "accion_242",
+        "accion_187"
+      ]
+    }
+  ]
+}
