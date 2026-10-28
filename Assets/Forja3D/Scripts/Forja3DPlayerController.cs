@@ -64,7 +64,7 @@ namespace Forja3D
             anim = GetComponentInChildren<Animator>();
             visual = anim ? anim.transform : (transform.childCount > 0 ? transform.GetChild(0) : null);
             vida = GetComponent<Forja3DHealth>();
-            if (anim) anim.applyRootMotion = false;
+            CalcularZona(); if (anim) anim.applyRootMotion = false;
             Estamina = estaminaMaxima;
             if (anim) { capaTorso = anim.GetLayerIndex("Torso"); if (capaTorso >= 0) anim.SetLayerWeight(capaTorso, 0f); }
         }
@@ -180,16 +180,36 @@ namespace Forja3D
 
         // Red de seguridad: recuerda el último punto pisable (sobre el NavMesh) y, si un golpe o un choque
         // deja a Dante fuera de la zona jugable (encima de un muro, fuera del mapa o cayendo), lo devuelve allí.
+        // Ya no teletransporta solo por estar lejos del NavMesh (eso devolvía a Dante al punto donde empezó
+        // la voltereta cuando terminaba junto a un árbol o un borde). Solo actúa si cae, si queda encima de un
+        // muro o si sale del rectángulo jugable.
         void VigilarLimites()
         {
             if (Time.time < proximoChequeo) return;
             proximoChequeo = Time.time + 0.2f;
-            bool enSuelo = NavMesh.SamplePosition(transform.position, out var hit, 0.9f, NavMesh.AllAreas);
-            if (enSuelo && cc.isGrounded) { ultimoSeguro = hit.position; fueraDesde = -1f; return; }
+            if (esquivando) { fueraDesde = -1f; return; }
+            bool enSuelo = NavMesh.SamplePosition(transform.position, out var hit, 1.5f, NavMesh.AllAreas);
+            if (enSuelo && cc.isGrounded && Mathf.Abs(hit.position.y - transform.position.y) < 0.8f) ultimoSeguro = hit.position;
             if (ultimoSeguro == Vector3.zero) { ultimoSeguro = transform.position; return; }
-            if (fueraDesde < 0f) fueraDesde = Time.time;
-            bool cayendo = transform.position.y < ultimoSeguro.y - 4f;
-            if (cayendo || Time.time - fueraDesde > 1.2f) Reubicar(ultimoSeguro);
+            var p = transform.position;
+            bool cayendo = p.y < ultimoSeguro.y - 4f;
+            bool fuera = zonaJugable.size.x > 1f && (p.x < zonaJugable.min.x || p.x > zonaJugable.max.x || p.z < zonaJugable.min.z || p.z > zonaJugable.max.z);
+            bool encima = p.y > ultimoSeguro.y + 2.2f && cc.isGrounded;
+            if (cayendo || fuera) { Reubicar(ultimoSeguro); return; }
+            if (encima) { if (fueraDesde < 0f) fueraDesde = Time.time; if (Time.time - fueraDesde > 0.8f) Reubicar(ultimoSeguro); }
+            else fueraDesde = -1f;
+        }
+
+        // Rectángulo jugable = la malla de navegación horneada (con 3 m de holgura).
+        Bounds zonaJugable;
+        void CalcularZona()
+        {
+            var tri = NavMesh.CalculateTriangulation();
+            if (tri.vertices == null || tri.vertices.Length == 0) return;
+            var b = new Bounds(tri.vertices[0], Vector3.zero);
+            foreach (var v in tri.vertices) b.Encapsulate(v);
+            b.Expand(new Vector3(6f, 100f, 6f));
+            zonaJugable = b;
         }
 
         // Los enemigos no chocan físicamente con Dante (así ningún jefe lo empuja por encima de un muro);
@@ -324,6 +344,7 @@ namespace Forja3D
             Forja3DAudio.Sonar("esquiva", transform.position + Vector3.up * 0.5f, 0.8f);
             bool clip = Forja3DAnim.Tiene(anim, "Dodge", AnimatorControllerParameterType.Trigger);
             if (clip) Forja3DAnim.Trigger(anim, "Dodge");
+            var offCuerpo = anim && anim.isHuman ? anim.bodyPosition - transform.position : Vector3.zero;
             const float dur = 0.5f;
             var rotIni = transform.rotation; var rotFin = Quaternion.LookRotation(dir);
             var posVis = visual ? visual.localPosition : Vector3.zero;
@@ -345,6 +366,14 @@ namespace Forja3D
                 yield return null;
             }
             if (visual) { visual.localPosition = posVis; visual.localRotation = rotVis; }
+            // Si el clip desplazó el cuerpo respecto al personaje, mueve al personaje hasta donde quedó el cuerpo
+            // para que al volver a idle no "regrese" al punto de partida.
+            if (clip && anim && anim.isHuman)
+            {
+                var d = anim.bodyPosition - transform.position - offCuerpo; d.y = 0;
+                if (d.magnitude > 0.35f) cc.Move(Vector3.ClampMagnitude(d, 4f));
+            }
+            ultimoSeguro = Vector3.zero; proximoChequeo = 0f;
             esquivando = false;
         }
 

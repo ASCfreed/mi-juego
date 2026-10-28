@@ -614,8 +614,27 @@ namespace Forja3D.EditorTools
         // Escala un modelo para que mida exactamente 'metros' de alto (los FBX de Meshy y Tripo llegan en unidades distintas)
         static void AjustarAltura(GameObject g, float metros)
         {
-            var b = Forja3DImporter.Limites(g);
-            if (b.size.y > 0.01f) g.transform.localScale *= metros / b.size.y;
+            float actual = AlturaActual(g);
+            if (actual > 0.01f) g.transform.localScale *= metros / actual;
+        }
+
+        // Humanoides: de los pies a la coronilla según los huesos (los límites de la malla con piel a veces
+        // vienen mal: capas, túnicas o vértices sueltos). Resto: límites de las mallas.
+        static float AlturaActual(GameObject g)
+        {
+            var anim = g.GetComponentInChildren<Animator>();
+            if (anim && anim.isHuman)
+            {
+                var cabeza = anim.GetBoneTransform(HumanBodyBones.Head);
+                var pieI = anim.GetBoneTransform(HumanBodyBones.LeftFoot); var pieD = anim.GetBoneTransform(HumanBodyBones.RightFoot);
+                if (cabeza && pieI && pieD)
+                {
+                    float pies = Mathf.Min(pieI.position.y, pieD.position.y);
+                    float h = (cabeza.position.y - pies) * 1.16f; // tobillo→suelo y cuello→coronilla
+                    if (h > 0.01f) return h;
+                }
+            }
+            return Forja3DImporter.Limites(g).size.y;
         }
 
         static GameObject Capsula(string nombre, Color color, string id)

@@ -147,6 +147,7 @@ namespace Forja3D.EditorTools
                 anim.runtimeAnimatorController = ctrl;
                 anim.applyRootMotion = false;
                 anim.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
+                if (EsTripo(m) && !inst.GetComponent<Forja3DEstabilizador>()) inst.AddComponent<Forja3DEstabilizador>();
                 var cc = inst.GetComponent<CharacterController>();
                 if (!cc) cc = inst.AddComponent<CharacterController>();
                 float h = Mathf.Max(b.size.y, 0.5f);
@@ -431,6 +432,8 @@ namespace Forja3D.EditorTools
                 return;
             }
             mi.animationType = Forja3DImporter.EsTripo(m) ? ModelImporterAnimationType.Generic : ModelImporterAnimationType.Human;
+            // Tripo exporta desde Blender (Z arriba): sin esto, las animaciones que tocan el nodo "Armature" tumban al jefe
+            if (Forja3DImporter.EsTripo(m)) mi.bakeAxisConversion = true;
             mi.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
             mi.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
         }
