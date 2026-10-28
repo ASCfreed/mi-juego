@@ -711,7 +711,8 @@ namespace Forja3D.EditorTools
             var h = g.AddComponent<Forja3DHealth>(); h.esJugador = true; h.vidaMaxima = Mathf.Max(1, n.jugador?.vida ?? 5);
             var control = g.AddComponent<Forja3DPlayerController>(); control.crearCamaraAutomatica = false;
             var armaIni = n.jugador?.arma ?? "";
-            if (armaIni.Contains("hoz") || armaIni.Contains("guadana")) control.alcanceAtaque *= 1.35f;
+            bool conAsta = armaIni.Contains("hoz") || armaIni.Contains("guadana");
+            if (conAsta) control.alcanceAtaque *= 1.25f;
             Arma(g, !string.IsNullOrEmpty(n.jugador?.arma) ? n.jugador.arma : Forja3DImporter.RutaPrefab("espada") ? "espada" : null);
             // Arma que se gana al vencer al jefe del nivel (la hoz de la Muerte): queda preparada y oculta
             if (!string.IsNullOrEmpty(n.recompensa_arma) && Forja3DImporter.RutaPrefab(n.recompensa_arma))
@@ -719,7 +720,7 @@ namespace Forja3D.EditorTools
                 var premio = Arma(g, n.recompensa_arma, "ArmaRecompensa");
                 if (premio) { premio.SetActive(false); var pc = g.GetComponent<Forja3DPlayerController>(); pc.nombreRecompensa = n.recompensa_nombre ?? ""; }
             }
-            if (Forja3DImporter.RutaPrefab("escudo")) Escudo(g, "escudo");
+            if (!conAsta && Forja3DImporter.RutaPrefab("escudo")) Escudo(g, "escudo"); // con la hoz se cubre con el asta
         }
 
         // Coloca un arma generada (p. ej. "espada") en la mano derecha de un humanoide.

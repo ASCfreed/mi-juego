@@ -28,7 +28,7 @@ namespace Forja3D
         public float gravedad = -20f;
 
         [Header("Combate")]
-        public float alcanceAtaque = 1.5f;
+        public float alcanceAtaque = 1.35f; // espada; la hoz llega un 25 % más lejos
         public int danioAtaque = 1;
         public float ventanaParry = 0.22f;
 
@@ -49,7 +49,9 @@ namespace Forja3D
             var nueva = BuscarHijo("ArmaRecompensa"); if (!nueva) return;
             var vieja = BuscarHijo("Arma"); if (vieja) Destroy(vieja.gameObject);
             nueva.gameObject.SetActive(true); nueva.name = "Arma";
-            alcanceAtaque *= 1.35f; // un arma de asta llega más lejos
+            alcanceAtaque *= 1.25f; // un arma de asta llega más lejos
+            // Con la hoz se cubre con el asta: el escudo se descarta
+            var escudo = BuscarHijo("Escudo"); if (escudo) Destroy(escudo.gameObject);
             Forja3DFX.Chispas(nueva.position, 40);
             Forja3DAudio.Sonar("victoria", nueva.position, 0.6f);
             if (!string.IsNullOrEmpty(nombreRecompensa)) Forja3DGameManager.Mensaje(nombreRecompensa);
