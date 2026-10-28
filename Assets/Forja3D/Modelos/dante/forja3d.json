@@ -1,0 +1,36 @@
+{
+  "forja3d": 1,
+  "personaje": true,
+  "esqueleto": "meshy",
+  "biblioteca": true,
+  "archivos": [
+    {
+      "nombre": "personaje",
+      "tipo": "modelo"
+    },
+    {
+      "nombre": "caminar",
+      "tipo": "animacion"
+    },
+    {
+      "nombre": "correr",
+      "tipo": "animacion"
+    },
+    {
+      "nombre": "idle+saltar+ataque+golpeado+muerte+habilidad_1+habilidad_2+habilidad_3+alerta+bailar",
+      "tipo": "animacion",
+      "clips": [
+        "idle",
+        "saltar",
+        "ataque",
+        "golpeado",
+        "muerte",
+        "habilidad_1",
+        "habilidad_2",
+        "habilidad_3",
+        "alerta",
+        "bailar"
+      ]
+    }
+  ]
+}
