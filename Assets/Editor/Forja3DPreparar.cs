@@ -48,35 +48,68 @@ public static class Forja3DPreparar
         }
     }
 
-    /// <summary>XR Plug-in Management: ARCore como loader de Android, inicializado al arrancar.</summary>
+    /// <summary>
+    /// XR Plug-in Management: ARCore como loader de Android, inicializado al arrancar.
+    /// Se asegura de que los ajustes, el manager y el loader queden GUARDADOS como assets (si solo
+    /// viven en memoria, el APK sale sin XR y la cámara nunca se abre). Si algo falta, falla la compilación.
+    /// </summary>
     static void ActivarARCore()
     {
+        const string ruta = "Assets/XR/XRGeneralSettingsPerBuildTarget.asset";
+        if (!AssetDatabase.IsValidFolder("Assets/XR")) AssetDatabase.CreateFolder("Assets", "XR");
+
         EditorBuildSettings.TryGetConfigObject(XRGeneralSettings.k_SettingsKey, out XRGeneralSettingsPerBuildTarget porTarget);
+        if (porTarget == null) porTarget = AssetDatabase.LoadAssetAtPath<XRGeneralSettingsPerBuildTarget>(ruta);
         if (porTarget == null)
         {
             porTarget = ScriptableObject.CreateInstance<XRGeneralSettingsPerBuildTarget>();
-            if (!AssetDatabase.IsValidFolder("Assets/XR")) AssetDatabase.CreateFolder("Assets", "XR");
-            AssetDatabase.CreateAsset(porTarget, "Assets/XR/XRGeneralSettingsPerBuildTarget.asset");
-            EditorBuildSettings.AddConfigObject(XRGeneralSettings.k_SettingsKey, porTarget, true);
+            AssetDatabase.CreateAsset(porTarget, ruta);
         }
+        string rutaPorTarget = AssetDatabase.GetAssetPath(porTarget);
+        EditorBuildSettings.AddConfigObject(XRGeneralSettings.k_SettingsKey, porTarget, true);
 
         if (!porTarget.HasSettingsForBuildTarget(BuildTargetGroup.Android))
             porTarget.CreateDefaultSettingsForBuildTarget(BuildTargetGroup.Android);
-        if (!porTarget.HasManagerSettingsForBuildTarget(BuildTargetGroup.Android))
-            porTarget.CreateDefaultManagerSettingsForBuildTarget(BuildTargetGroup.Android);
-
         var general = porTarget.SettingsForBuildTarget(BuildTargetGroup.Android);
-        var manager = porTarget.ManagerSettingsForBuildTarget(BuildTargetGroup.Android);
+        if (general == null) throw new System.Exception("[Forja3D] ERROR: no se pudieron crear los ajustes XR de Android.");
+        if (!AssetDatabase.Contains(general)) { general.name = "Android Settings"; AssetDatabase.AddObjectToAsset(general, rutaPorTarget); }
+
+        if (general.Manager == null)
+        {
+            if (!porTarget.HasManagerSettingsForBuildTarget(BuildTargetGroup.Android))
+                porTarget.CreateDefaultManagerSettingsForBuildTarget(BuildTargetGroup.Android);
+            general.Manager = porTarget.ManagerSettingsForBuildTarget(BuildTargetGroup.Android);
+        }
+        var manager = general.Manager;
+        if (manager == null)
+        {
+            manager = ScriptableObject.CreateInstance<XRManagerSettings>();
+            general.Manager = manager;
+        }
+        if (!AssetDatabase.Contains(manager)) { manager.name = "Android Providers"; AssetDatabase.AddObjectToAsset(manager, rutaPorTarget); }
+
         general.InitManagerOnStart = true;
-
-        bool yaEsta = manager.activeLoaders.Any(l => l != null && l.GetType().FullName == LoaderARCore);
-        if (!yaEsta && !XRPackageMetadataStore.AssignLoader(manager, LoaderARCore, BuildTargetGroup.Android))
-            throw new System.Exception("[Forja3D] ERROR: no pude activar ARCore en XR Plug-in Management (¿falta el paquete com.unity.xr.arcore?).");
-
         EditorUtility.SetDirty(porTarget);
         EditorUtility.SetDirty(general);
         EditorUtility.SetDirty(manager);
         AssetDatabase.SaveAssets();
-        Debug.Log("[Forja3D] ARCore activado en XR Plug-in Management (Android).");
+
+        bool yaEsta = manager.activeLoaders.Any(l => l != null && l.GetType().FullName == LoaderARCore);
+        if (!yaEsta && !XRPackageMetadataStore.AssignLoader(manager, LoaderARCore, BuildTargetGroup.Android))
+            throw new System.Exception("[Forja3D] ERROR: no pude activar ARCore en XR Plug-in Management (¿falta el paquete com.unity.xr.arcore?).");
+        EditorUtility.SetDirty(manager);
+        AssetDatabase.SaveAssets();
+
+        // ---------- Verificación: si falla, mejor que falle la compilación que un APK sin RA ----------
+        EditorBuildSettings.TryGetConfigObject(XRGeneralSettings.k_SettingsKey, out XRGeneralSettingsPerBuildTarget check);
+        var g = check != null ? check.SettingsForBuildTarget(BuildTargetGroup.Android) : null;
+        var loader = g?.Manager != null ? g.Manager.activeLoaders.FirstOrDefault(l => l != null && l.GetType().FullName == LoaderARCore) : null;
+        string estado = $"config={(check != null)} ajustes={(g != null && AssetDatabase.Contains(g))} " +
+                        $"manager={(g?.Manager != null && AssetDatabase.Contains(g.Manager))} loader={(loader != null && AssetDatabase.Contains(loader))} " +
+                        $"initOnStart={(g != null && g.InitManagerOnStart)} loaders=[{(g?.Manager != null ? string.Join(",", g.Manager.activeLoaders.Where(l => l != null).Select(l => l.GetType().Name)) : "")}]";
+        Debug.Log("[Forja3D] XR Android: " + estado);
+        if (check == null || g == null || !AssetDatabase.Contains(g) || g.Manager == null || !AssetDatabase.Contains(g.Manager) ||
+            loader == null || !AssetDatabase.Contains(loader) || !g.InitManagerOnStart)
+            throw new System.Exception("[Forja3D] ERROR: la configuración XR de Android no quedó guardada (" + estado + ").");
     }
 }

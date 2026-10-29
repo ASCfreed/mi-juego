@@ -156,10 +156,10 @@ namespace ParticulasRA
             box.anchorMin = new Vector2(0.04f, 1);
             box.anchorMax = new Vector2(0.96f, 1);
             box.pivot = new Vector2(0.5f, 1);
-            box.sizeDelta = new Vector2(0, 84);
+            box.sizeDelta = new Vector2(0, 128);
             box.anchoredPosition = new Vector2(0, -132);
             UIFactory.Img(box, new Color(0.05f, 0.07f, 0.12f, 0.8f), false);
-            statusText = UIFactory.Label(box, "", 28, UIFactory.Txt, TextAnchor.MiddleCenter);
+            statusText = UIFactory.Label(box, "", 26, UIFactory.Txt, TextAnchor.MiddleCenter);
             UIFactory.Stretch(statusText.rectTransform, 16, 16, 0, 0);
             statusBox = box.gameObject;
             statusBox.SetActive(false);
@@ -169,7 +169,7 @@ namespace ParticulasRA
             prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 1);
             prt.pivot = new Vector2(0.5f, 1);
             prt.sizeDelta = new Vector2(640, 96);
-            prt.anchoredPosition = new Vector2(0, -230);
+            prt.anchoredPosition = new Vector2(0, -272);
             pb.GetComponentInChildren<Text>().color = UIFactory.PanelCol;
             permissionBtn = pb.gameObject;
             permissionBtn.SetActive(false);
@@ -181,7 +181,7 @@ namespace ParticulasRA
             cont.anchorMin = cont.anchorMax = new Vector2(0, 1);
             cont.pivot = new Vector2(0, 1);
             cont.sizeDelta = new Vector2(1000, 460);
-            cont.anchoredPosition = new Vector2(20, -232);
+            cont.anchoredPosition = new Vector2(20, -274);
             var v = cont.gameObject.AddComponent<VerticalLayoutGroup>();
             v.spacing = 8;
             v.childAlignment = TextAnchor.UpperLeft;

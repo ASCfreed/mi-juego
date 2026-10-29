@@ -52,6 +52,7 @@ namespace ParticulasRA
                 enabled = false;
                 return;
             }
+            if (GetComponent<XRArranque>() == null) gameObject.AddComponent<XRArranque>();
             simRoot.localScale = Vector3.one * (chamberSize * 0.5f);
             chamber.gameObject.SetActive(false);
             planeManager.requestedDetectionMode = PlaneDetectionMode.Horizontal;
@@ -96,7 +97,7 @@ namespace ParticulasRA
             string blocking = BlockingStatus();
             if (blocking != null)
             {
-                ui.SetStatus(blocking);
+                ui.SetStatus(blocking + "\n" + XRArranque.Linea());
                 if (indicator) indicator.enabled = false;
                 return;
             }
@@ -157,7 +158,7 @@ namespace ParticulasRA
                 indicator.enabled = false;
                 ui.SetStatus(Application.isEditor
                     ? "Editor: haz clic para colocar la cámara frente a ti"
-                    : "Mueve el móvil despacio para detectar el suelo…");
+                    : "Mueve el móvil despacio para detectar el suelo…\n" + XRArranque.Linea());
             }
 
             var s = PointerInput.Read();
