@@ -1,0 +1,7 @@
+{
+  "activo": "dante",
+  "proyectos": [
+    { "repo": "ASCfreed/mi-juego", "nombre": "dante", "rama": "main", "tipo": "juego" },
+    { "repo": "ASCfreed/mi-juego", "nombre": "particulas-ra", "rama": "particulas-ra", "tipo": "basica", "creado": "2026-10-29" }
+  ]
+}
