@@ -1,4 +1,4 @@
-// Forja3D — cámara orbital en tercera persona (ratón libre en PC o arrastre táctil).
+// Forja3D — cámara orbital en tercera persona (ratón con clic derecho o arrastre táctil).
 using UnityEngine;
 
 // EXPANSIÓN FUTURA (PC/consolas): con mando, la cámara recibe el stick derecho a través de
@@ -27,7 +27,7 @@ namespace Forja3D
 
         void LateUpdate()
         {
-            if (!objetivo || Forja3DGameManager.Pausado) return;
+            if (!objetivo) return;
             var m = Forja3DInput.Mirar * sensibilidad;
             yaw += m.x;
             pitch = Mathf.Clamp(pitch - m.y, limitesPitch.x, limitesPitch.y);

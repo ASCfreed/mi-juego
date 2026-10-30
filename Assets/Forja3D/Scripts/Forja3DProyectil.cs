@@ -117,8 +117,10 @@ namespace Forja3D
             return p;
         }
 
+        static bool primeraRoca = true;
         public static Forja3DProyectil Roca(Vector3 desde, Vector3 dir, float radio)
         {
+            if (primeraRoca) { primeraRoca = false; Debug.Log("[Forja3D] Primera roca rodante"); }
             var g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             Object.Destroy(g.GetComponent<Collider>());
             g.name = "RocaRodante"; g.transform.position = desde + Vector3.up * radio; g.transform.localScale = Vector3.one * radio * 2f;

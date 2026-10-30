@@ -120,7 +120,7 @@ namespace Forja3D
         void Update()
         {
             // Teclado en PC (EXPANSIÓN FUTURA: botón del mando)
-            if (Activo && !Forja3DGameManager.Pausado && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))) Avanzar();
+            if (Activo && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))) Avanzar();
         }
 
         void OnDestroy() { if (inst == this) { inst = null; Activo = false; } }

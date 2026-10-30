@@ -32,7 +32,7 @@ namespace Forja3D
             }
         }
 
-        void Start() { var p = GameObject.FindWithTag("Player"); if (p) jugador = p.transform; }
+        void Start() { var p = GameObject.FindWithTag("Player"); if (p) jugador = p.transform; Debug.Log("[Forja3D] Pluto listo"); }
 
         void Update()
         {
@@ -70,6 +70,7 @@ namespace Forja3D
 
         void Hincharse()
         {
+            Debug.Log("[Forja3D] Pluto se hincha");
             fase = Fase.Hinchado; rafagas = enemigo && enemigo.Furioso ? 4 : 3; proximaRafaga = Time.time + 0.9f;
             Forja3DAudio.Sonar("voz_jefe", transform.position, 0.9f, 0.15f, 0.6f);
             Forja3DGameManager.Mensaje("¡PLUTO SE HINCHA DE ORO!");

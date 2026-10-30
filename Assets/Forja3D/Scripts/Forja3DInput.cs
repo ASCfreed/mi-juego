@@ -54,7 +54,7 @@ namespace Forja3D
         }
 
         public static bool Correr => CorrerActivo || (!EsTactil && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)));
-        public static bool Cubrir => CubrirTactil || (!EsTactil && (Input.GetMouseButton(1) || Input.GetKey(KeyCode.Q)));
+        public static bool Cubrir => CubrirTactil || (!EsTactil && (Input.GetMouseButton(1) && Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.Q)));
 
         public static bool Saltar => Pulso(ref saltoFrame) || (!EsTactil && Input.GetKeyDown(KeyCode.Space));
         public static bool Atacar => Pulso(ref ataqueFrame) || (!EsTactil && Input.GetMouseButtonDown(0));
@@ -65,8 +65,7 @@ namespace Forja3D
             get
             {
                 var m = MiradaTactil; MiradaTactil = Vector2.zero;
-                // PC: con el cursor capturado, basta mover el ratón para girar la cámara
-                if (!EsTactil && Cursor.lockState == CursorLockMode.Locked) m += new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * 2.5f;
+                if (!EsTactil && Input.GetMouseButton(1) && !Input.GetKey(KeyCode.LeftControl)) m += new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * 3f;
                 return m;
             }
         }

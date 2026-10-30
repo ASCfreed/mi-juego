@@ -26,8 +26,6 @@ namespace Forja3D
         void Start()
         {
             Application.targetFrameRate = 60;
-            Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
-            Time.timeScale = 1f; AudioListener.pause = false;
             var cam = Camera.main;
             if (cam) { cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = colorFondo; }
             if (!FindObjectOfType<EventSystem>()) new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
@@ -58,22 +56,27 @@ namespace Forja3D
             Boton(raiz, "COMENZAR", new Vector2(0.5f, y), () => { PlayerPrefs.SetInt(ClaveProgreso, 1); SceneManager.LoadScene(1); });
             if (continuar) { y -= 0.11f; Boton(raiz, "CONTINUAR", new Vector2(0.5f, y), () => SceneManager.LoadScene(guardado)); }
             if (total > 2) { y -= 0.11f; Boton(raiz, "SELECCIONAR NIVEL", new Vector2(0.5f, y), AbrirNiveles); }
-            y -= 0.11f; Boton(raiz, "SALIR", new Vector2(0.5f, y), Salir);
+            // Diagnóstico: qué pasó en la última sesión (útil si el juego se cerró de golpe)
+            if (!string.IsNullOrEmpty(Forja3DRegistro.SesionAnterior))
+                Boton(raiz, "Diagnóstico", new Vector2(0.9f, 0.06f), AbrirDiagnostico, new Vector2(260, 70), 28);
         }
 
-        void Update()
+        GameObject panelDiag;
+        void AbrirDiagnostico()
         {
-            if (Input.GetKeyDown(KeyCode.Escape) && panelNiveles && panelNiveles.activeSelf) panelNiveles.SetActive(false);
-        }
-
-        public static void Salir()
-        {
-            PlayerPrefs.Save();
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
+            if (panelDiag) { panelDiag.SetActive(true); return; }
+            panelDiag = new GameObject("Diagnostico", typeof(RectTransform), typeof(Image));
+            panelDiag.transform.SetParent(raiz, false);
+            var pr = panelDiag.GetComponent<RectTransform>(); pr.anchorMin = Vector2.zero; pr.anchorMax = Vector2.one; pr.offsetMin = pr.offsetMax = Vector2.zero;
+            panelDiag.GetComponent<Image>().color = new Color(0.02f, 0.02f, 0.02f, 0.97f);
+            var lineas = Forja3DRegistro.SesionAnterior.Split('\n');
+            int desde = Mathf.Max(0, lineas.Length - 22);
+            var texto = string.Join("\n", lineas, desde, lineas.Length - desde);
+            var t = Forja3DGameManager.Texto(panelDiag.transform, "Última sesión (toma una captura y mándasela a Claude):\n\n" + texto, 22, TextAnchor.UpperLeft);
+            t.supportRichText = false; t.color = new Color(0.85f, 0.85f, 0.8f);
+            t.rectTransform.anchorMin = new Vector2(0.03f, 0.14f); t.rectTransform.anchorMax = new Vector2(0.97f, 0.97f);
+            t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Truncate;
+            Boton(panelDiag.transform, "VOLVER", new Vector2(0.5f, 0.07f), () => panelDiag.SetActive(false), new Vector2(360, 90), 40);
         }
 
         void AbrirNiveles()
@@ -103,7 +106,7 @@ namespace Forja3D
             Boton(panelNiveles.transform, "VOLVER", new Vector2(0.5f, 0.07f), () => panelNiveles.SetActive(false), new Vector2(360, 100), 40);
         }
 
-        public static Button Boton(Transform padre, string texto, Vector2 ancla, UnityEngine.Events.UnityAction accion, Vector2? tam = null, int letra = 46)
+        static Button Boton(Transform padre, string texto, Vector2 ancla, UnityEngine.Events.UnityAction accion, Vector2? tam = null, int letra = 46)
         {
             var go = new GameObject(texto, typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(padre, false);
