@@ -730,7 +730,7 @@ namespace Forja3D.EditorTools
             }
             if (!conAsta && Forja3DImporter.RutaPrefab("escudo")) Escudo(g, "escudo"); // con la hoz se cubre con el asta
             if (n.lentitud > 0f && n.lentitud < 1f) { control.velocidadTrote *= n.lentitud; control.velocidadCorrer *= n.lentitud; }
-            if (n.jugador != null && n.jugador.cuerda) CuerdaEnCintura(g, id);
+            if (n.jugador != null && n.jugador.cuerda) CuerdaEnCintura(g, Mathf.Abs((n.titulo ?? "nivel").GetHashCode()).ToString());
         }
 
         // Coloca un arma generada (p. ej. "espada") en la mano derecha de un humanoide.
