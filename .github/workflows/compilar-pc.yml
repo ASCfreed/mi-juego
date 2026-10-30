@@ -1,0 +1,93 @@
+# Forja3D — compila el juego para PC Windows (.exe) en la nube (GameCI) y lo publica como Release (ZIP).
+# Lánzalo desde la pestaña Actions → "Compilar PC (Windows)" → Run workflow.
+name: Compilar PC (Windows)
+
+on:
+  workflow_dispatch:
+    inputs:
+      nombre_app:
+        description: Nombre del juego
+        default: Dante Comedia
+      version:
+        description: Versión (ej. 0.1.0)
+        default: 0.1.0
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compilar-pc-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Liberar espacio en disco
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          tool-cache: false
+
+      - uses: actions/checkout@v4
+
+      - name: Caché de Library (acelera compilaciones siguientes)
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Win64-v1-${{ github.ref_name }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-Win64-v1-${{ github.ref_name }}-
+
+      - name: Datos de la app
+        env:
+          NOMBRE: ${{ inputs.nombre_app }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p ProjectSettings
+          jq -n --arg n "$NOMBRE" --arg v "$VERSION" --argjson c ${{ github.run_number }} \
+            '{nombre:$n, version:$v, codigo:$c}' > ProjectSettings/Forja3DApp.json
+          cat ProjectSettings/Forja3DApp.json
+
+      - name: Compilar con Unity
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: StandaloneWindows64
+          buildName: Juego
+          buildMethod: Forja3DBuild.BuildWindows
+          versioning: None
+          allowDirtyBuild: true
+
+      - name: Empaquetar en ZIP
+        id: zip
+        run: |
+          EXE=$(find build -name "*.exe" ! -name "UnityCrashHandler*" | head -n 1)
+          if [ -z "$EXE" ]; then echo "::error::[Forja3D] ERROR: no se generó ningún .exe"; exit 1; fi
+          DIR=$(dirname "$EXE")
+          sudo chown -R "$(id -u):$(id -g)" build
+          rm -rf "$DIR"/*_BurstDebugInformation_DoNotShip "$DIR"/*_BackUpThisFolder_ButDontShipItWithYourGame
+          (cd "$DIR" && zip -qr "$GITHUB_WORKSPACE/juego-pc.zip" .)
+          echo "tam=$(du -h juego-pc.zip | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: juego-pc
+          path: juego-pc.zip
+          retention-days: 30
+
+      - name: Publicar Release con el ZIP
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pc-${{ github.run_number }}
+          name: "${{ inputs.nombre_app }} PC v${{ inputs.version }} (compilación ${{ github.run_number }})"
+          body: "Juego para Windows 64 bits generado por Forja3D (${{ steps.zip.outputs.tam }}). Descomprime el ZIP y abre Juego.exe. Controles: WASD mover, ratón derecho girar cámara, clic izquierdo atacar, Q cubrir, E esquivar, Espacio saltar, Shift correr, F cuerda."
+          files: juego-pc.zip
+          make_latest: false

@@ -133,6 +133,71 @@ public static class Forja3DBuild
         }
     }
 
+    [MenuItem("Forja3D/Compilar PC (Windows)")]
+    static void MenuPC() => BuildWindows();
+
+    // PC Windows 64 bits (Mono: se puede compilar desde ubuntu-latest en GitHub Actions)
+    public static void BuildWindows()
+    {
+        try
+        {
+            string salida = Arg("-customBuildPath", "build/StandaloneWindows64/Juego.exe");
+            if (!salida.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) salida = Path.Combine(salida, "Juego.exe");
+            var app = File.Exists(RutaApp) ? JsonUtility.FromJson<DatosApp>(File.ReadAllText(RutaApp)) : new DatosApp();
+            string nombreApp = string.IsNullOrWhiteSpace(app.nombre) ? "Juego Forja3D" : app.nombre;
+            string version = string.IsNullOrWhiteSpace(app.version) ? "0.1.0" : app.version;
+
+            Debug.Log("[Forja3D] 1/3 Preparando modelos…");
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            Forja3DImporter.PrepararTodo();
+
+            Debug.Log("[Forja3D] 2/3 Construyendo niveles…");
+            var escenas = Forja3DLevelBuilder.ConstruirTodos();
+            EditorBuildSettings.scenes = escenas.Select(e => new EditorBuildSettingsScene(e, true)).ToArray();
+
+            Debug.Log("[Forja3D] 3/3 Compilando para Windows…");
+            var t = NamedBuildTarget.Standalone;
+            PlayerSettings.productName = nombreApp;
+            var id = File.Exists(RutaIdentidad) ? JsonUtility.FromJson<Identidad>(File.ReadAllText(RutaIdentidad)) : new Identidad();
+            PlayerSettings.companyName = string.IsNullOrWhiteSpace(id.empresa) ? "Forja3D" : id.empresa;
+            var icono = AssetDatabase.LoadAssetAtPath<Texture2D>(RutaIcono);
+            if (icono != null) PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icono }, IconKind.Any);
+            PlayerSettings.SplashScreen.backgroundColor = new Color(0.03f, 0.01f, 0.01f);
+            PlayerSettings.bundleVersion = version;
+            PlayerSettings.SetScriptingBackend(t, ScriptingImplementation.Mono2x);
+            PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
+            PlayerSettings.defaultIsNativeResolution = true;
+            PlayerSettings.resizableWindow = true;
+            PlayerSettings.runInBackground = false;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(salida)));
+            var reporte = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = escenas.ToArray(),
+                locationPathName = salida,
+                target = BuildTarget.StandaloneWindows64,
+                targetGroup = BuildTargetGroup.Standalone,
+                options = BuildOptions.None,
+            });
+            var r = reporte.summary;
+            Debug.Log($"[Forja3D] Formato: EXE Windows 64 bits");
+            Debug.Log($"[Forja3D] Resultado: {r.result} · {r.totalSize / (1024f * 1024f):0.0} MB · {r.totalTime} · errores {r.totalErrors}");
+            if (r.result != BuildResult.Succeeded)
+            {
+                foreach (var paso in reporte.steps)
+                    foreach (var msg in paso.messages)
+                        if (msg.type == LogType.Error || msg.type == LogType.Exception)
+                            Debug.Log($"[Forja3D] ERROR en '{paso.name}': {msg.content.Replace('\n', ' ').Substring(0, Mathf.Min(400, msg.content.Length))}");
+                Salir(1);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[Forja3D] ERROR: " + e);
+            Salir(1);
+        }
+    }
+
     static void Salir(int codigo)
     {
         if (Application.isBatchMode) EditorApplication.Exit(codigo);
