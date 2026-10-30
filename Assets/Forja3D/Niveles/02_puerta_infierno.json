@@ -31,7 +31,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "J",
@@ -49,7 +52,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "hoz",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "V",
@@ -76,7 +82,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     }
   ],
   "jugador": {
@@ -133,6 +142,7 @@
   "narracion": [],
   "transicion": "Pasada la puerta, el aire se llenó de suspiros bajo un cielo sin estrellas. Corrían allí, detrás de una bandera que nunca se detiene, los que vivieron sin infamia y sin alabanza.\n\nMás allá se abría una ribera, y en ella esperaban en silencio las almas, mirando el agua oscura por donde llegaría un barquero viejo de ojos como brasas.",
   "meta_modelo": "",
+  "color_rio": "",
   "clima": "",
   "lentitud": 1,
   "terreno": {

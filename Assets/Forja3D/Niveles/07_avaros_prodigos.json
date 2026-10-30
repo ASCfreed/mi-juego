@@ -1,0 +1,213 @@
+{
+  "titulo": "VI · Avaros y pródigos",
+  "celda": 3,
+  "mapa": [
+    "####################",
+    "#P.V...E.....F.....#",
+    "#O.................#",
+    "#...F....R....E....#",
+    "#.................Q#",
+    "#######.....########",
+    "#....E.......F.....#",
+    "#O.................#",
+    "#.....F..J...E.....#",
+    "#..R.........R...M.#",
+    "####################"
+  ],
+  "leyenda": [
+    {
+      "simbolo": "E",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "Avaro",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "#c9a227",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
+    },
+    {
+      "simbolo": "J",
+      "tipo": "jefe",
+      "modelo": "pluto",
+      "vida": 30,
+      "escala": 1,
+      "color": "",
+      "nombre": "Pluto",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": "pluto"
+    },
+    {
+      "simbolo": "F",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "Pródigo",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "#7d5cff",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
+    },
+    {
+      "simbolo": "O",
+      "tipo": "rodante",
+      "modelo": "",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 6,
+      "comportamiento": ""
+    },
+    {
+      "simbolo": "Q",
+      "tipo": "rodante",
+      "modelo": "",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "oeste",
+      "periodo": 7,
+      "comportamiento": ""
+    },
+    {
+      "simbolo": "V",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Virgilio",
+      "seguir": true,
+      "dialogo": [
+        {
+          "quien": "Virgilio",
+          "texto": "¡Calla, lobo maldito! Consúmete por dentro con tu rabia. No sin razón bajamos a lo profundo: así se quiere allá arriba."
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "Mira cómo empujan esos pesos con el pecho. Si le devuelves una roca a su dueño, el oro se le vuelve en contra."
+        }
+      ],
+      "voz": "",
+      "aura": "",
+      "fantasma": true,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
+    }
+  ],
+  "jugador": {
+    "modelo": "dante",
+    "vida": 7,
+    "arma": "hoz",
+    "cuerda": true
+  },
+  "intro": [
+    {
+      "quien": "",
+      "texto": "«¡Pape Satàn, pape Satàn aleppe!», empezó a gritar Pluto con voz ronca."
+    },
+    {
+      "quien": "",
+      "texto": "Aquí vi más gente que en ningún otro lugar: de un lado y del otro, con grandes aullidos, empujaban pesos con la fuerza del pecho."
+    },
+    {
+      "quien": "",
+      "texto": "Chocaban entre sí, y allí mismo se volvían gritando: «¿Por qué guardas?» y «¿Por qué derrochas?»."
+    },
+    {
+      "quien": "Consejo",
+      "texto": "Las rocas ruedan por los carriles. Esquívalas, o haz un PARRY justo cuando te alcancen para devolverlas contra los condenados."
+    },
+    {
+      "quien": "Consejo",
+      "texto": "Pluto se hincha de oro: así los golpes débiles rebotan y escupe monedas (también se devuelven con parry). Cuando se desinfla, recibe el doble de daño."
+    }
+  ],
+  "salida": [
+    {
+      "quien": "",
+      "texto": "Como las velas hinchadas por el viento caen enredadas cuando el mástil se rompe, así cayó a tierra la fiera cruel."
+    },
+    {
+      "quien": "Virgilio",
+      "texto": "Hijo, ya ves la breve burla de los bienes confiados a la Fortuna, por los que tanto se pelea la raza humana."
+    }
+  ],
+  "recompensa_arma": "",
+  "recompensa_nombre": "",
+  "recompensa_dialogo": [],
+  "capitulo": "Canto VII",
+  "narracion": [],
+  "transicion": "Bajamos a la cuarta orilla, adentrándonos en la ribera dolorosa que encierra todo el mal del universo.\n\nMás abajo hervía un agua negra como la tinta: la laguna que llaman Estigia, donde se revuelcan los iracundos.",
+  "meta_modelo": "",
+  "color_rio": "",
+  "clima": "",
+  "lentitud": 1,
+  "terreno": {
+    "tipo": "piedra",
+    "colinas": 0.35,
+    "semilla": 7
+  },
+  "objetivo": "jefe",
+  "cielo": "#2a2416",
+  "niebla": true,
+  "altura_muros": 4,
+  "color_muros": "#3b3222",
+  "ambiente": "infierno"
+}

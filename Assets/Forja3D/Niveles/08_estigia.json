@@ -1,0 +1,221 @@
+{
+  "titulo": "VII · La laguna Estigia",
+  "celda": 3,
+  "mapa": [
+    "####################",
+    "#P.V....I......I...#",
+    "#~~~~~~~~~~~~~~~...#",
+    "#..I..........I....#",
+    "#...~~~~~~~~~~~~~~~#",
+    "#.I......A......I..#",
+    "#~~~~~~~~~~~~~~~...#",
+    "#.B...I......I.....#",
+    "#....I...G.....I...#",
+    "#..R..........R..M.#",
+    "####################"
+  ],
+  "leyenda": [
+    {
+      "simbolo": "I",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "Iracundo",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "#d0201a",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
+    },
+    {
+      "simbolo": "G",
+      "tipo": "jefe",
+      "modelo": "flegias",
+      "vida": 30,
+      "escala": 1,
+      "color": "",
+      "nombre": "Flegias",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "remo",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
+    },
+    {
+      "simbolo": "B",
+      "tipo": "decoracion",
+      "modelo": "barca",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
+    },
+    {
+      "simbolo": "V",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Virgilio",
+      "seguir": true,
+      "dialogo": [
+        {
+          "quien": "Virgilio",
+          "texto": "Flegias, Flegias, esta vez gritas en vano: no nos tendrás más que lo que tardemos en cruzar el fango."
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "Su barca embiste y su remo golpea fuerte. Tira de él con la Cuerda cuando lo tengas cerca."
+        }
+      ],
+      "voz": "",
+      "aura": "",
+      "fantasma": true,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
+    },
+    {
+      "simbolo": "A",
+      "tipo": "npc",
+      "modelo": "filippo",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Filippo Argenti",
+      "seguir": false,
+      "dialogo": [
+        {
+          "quien": "Filippo",
+          "texto": "¿Quién eres tú, que vienes antes de tu hora?"
+        },
+        {
+          "quien": "Dante",
+          "texto": "Si vengo, no me quedo. Pero ¿quién eres tú, que te has vuelto tan sucio?"
+        },
+        {
+          "quien": "Filippo",
+          "texto": "Ya ves que soy uno que llora."
+        },
+        {
+          "quien": "Dante",
+          "texto": "Con llanto y con luto, espíritu maldito, quédate. Que te conozco, aunque estés todo sucio."
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "¡Vete allá con los otros perros!"
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "Alma desdeñosa, bendita la que te llevó en su vientre."
+        },
+        {
+          "quien": "",
+          "texto": "«¡A Filippo Argenti!», gritaban todos; y el florentino, espíritu rabioso, se volvía contra sí mismo con los dientes."
+        }
+      ],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": true,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
+    }
+  ],
+  "jugador": {
+    "modelo": "dante",
+    "vida": 7,
+    "arma": "hoz",
+    "cuerda": true
+  },
+  "intro": [
+    {
+      "quien": "",
+      "texto": "Vimos una laguna de agua más negra que oscura, y en ella gente enfangada, desnuda, con el rostro ofendido."
+    },
+    {
+      "quien": "",
+      "texto": "Se golpeaban no solo con las manos, sino con la cabeza, con el pecho y con los pies, y se despedazaban a mordiscos."
+    },
+    {
+      "quien": "",
+      "texto": "Bajo el agua hay gente que suspira y hace burbujear la superficie: son los perezosos, que llevaron dentro un humo lento."
+    },
+    {
+      "quien": "Consejo",
+      "texto": "El fango de la Estigia frena tus pasos. Rodea la laguna: no se puede cruzar a pie."
+    },
+    {
+      "quien": "Consejo",
+      "texto": "Flegias golpea con su remo. La Cuerda lo arrastra hacia ti y lo aturde un momento."
+    }
+  ],
+  "salida": [
+    {
+      "quien": "",
+      "texto": "Y así el barquero de la ira volvió al agua de donde salió."
+    },
+    {
+      "quien": "",
+      "texto": "A lo lejos se encendieron dos llamitas en lo alto de una torre, y otra respondió desde tan lejos que apenas se veía."
+    }
+  ],
+  "recompensa_arma": "",
+  "recompensa_nombre": "",
+  "recompensa_dialogo": [],
+  "capitulo": "Canto VIII",
+  "narracion": [],
+  "transicion": "Ya el barquero había caído al agua negra. Delante se alzaban las mezquitas de la ciudad, bermejas como si salieran del fuego.\n\nHabíamos llegado a las puertas de Dite, y sobre ellas vi más de mil caídos del cielo.",
+  "meta_modelo": "puerta",
+  "color_rio": "#0c140e",
+  "clima": "",
+  "lentitud": 0.8,
+  "terreno": {
+    "tipo": "arena",
+    "colinas": 0.25,
+    "semilla": 8
+  },
+  "objetivo": "jefe",
+  "cielo": "#1f2a22",
+  "niebla": true,
+  "altura_muros": 4,
+  "color_muros": "#26302a",
+  "ambiente": "tormenta"
+}

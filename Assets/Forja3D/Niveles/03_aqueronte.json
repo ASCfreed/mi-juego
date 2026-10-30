@@ -30,7 +30,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "K",
@@ -48,7 +51,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "V",
@@ -71,7 +77,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     }
   ],
   "jugador": {
@@ -119,6 +128,7 @@
   "narracion": [],
   "transicion": "La barca cruzó el agua oscura. Antes de llegar a la otra orilla, otra multitud se juntaba ya en esta.\n\nCuando Dante volvió en sí estaba al borde del primer círculo: un valle hondo donde no se oía llanto, solo suspiros que hacían temblar el aire eterno. Allí moran los que no conocieron la fe… y, entre ellos, Virgilio.",
   "meta_modelo": "barca",
+  "color_rio": "",
   "clima": "",
   "lentitud": 1,
   "terreno": {

@@ -413,6 +413,7 @@ namespace Forja3D
         }
 
         // ── Bloqueo y parry (lo llama Forja3DHealth antes de aplicar el daño) ──
+        public float UltimoParry { get; private set; } = -99f;
         int Interceptar(int danio, Transform fuente, bool imparable)
         {
             if (!Cubriendo || imparable || !fuente) return danio;
@@ -424,6 +425,7 @@ namespace Forja3D
             if (Time.time - inicioCubrir <= ventanaParry)
             {
                 // ¡PARRY!
+                UltimoParry = Time.time; // los proyectiles (monedas, rocas) lo leen para devolverse
                 if (enemigo) enemigo.Aturdir(1.8f);
                 Forja3DAnim.Trigger(anim, "Parry");
                 parryHasta = Time.time + 0.6f;

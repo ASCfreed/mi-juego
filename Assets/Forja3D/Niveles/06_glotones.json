@@ -31,7 +31,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "K",
@@ -49,7 +52,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 3
+      "cabezas": 3,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "V",
@@ -72,7 +78,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "A",
@@ -119,7 +128,10 @@
       "clave": false,
       "desvanecer": true,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     }
   ],
   "jugador": {
@@ -171,6 +183,7 @@
   "narracion": [],
   "transicion": "Así pasamos por la sucia mezcla de las sombras y de la lluvia, a pasos lentos, hablando un poco de la vida futura.\n\nLlegaron al lugar donde se desciende, y allí encontraron a Pluto, el gran enemigo.",
   "meta_modelo": "",
+  "color_rio": "",
   "clima": "lluvia",
   "lentitud": 0.8,
   "terreno": {

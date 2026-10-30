@@ -31,7 +31,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "A",
@@ -49,7 +52,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "L",
@@ -67,7 +73,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "W",
@@ -85,7 +94,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "V",
@@ -128,7 +140,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     }
   ],
   "jugador": {
@@ -176,6 +191,7 @@
   "narracion": [],
   "transicion": "Dejaron atrás la selva y el monte que Dante no pudo subir. Virgilio iba delante; Dante, detrás, con el miedo todavía en el pecho.\n\nAl caer la tarde llegaron ante una puerta alta y oscura. Sobre ella, en color sombrío, había unas palabras escritas que ningún vivo debería leer.",
   "meta_modelo": "",
+  "color_rio": "",
   "clima": "",
   "lentitud": 1,
   "terreno": {

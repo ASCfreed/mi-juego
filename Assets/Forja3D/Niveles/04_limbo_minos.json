@@ -31,7 +31,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "J",
@@ -49,7 +52,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "V",
@@ -84,7 +90,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "H",
@@ -127,7 +136,10 @@
       "clave": false,
       "desvanecer": true,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     }
   ],
   "jugador": {
@@ -163,6 +175,7 @@
   "narracion": [],
   "transicion": "Minos se enroscó la cola para dictar sentencia, pero no pudo detenerlos.\n\nBajaron al segundo círculo, donde toda luz calla. Allí brama un viento infernal que nunca descansa y arrastra a los espíritus en remolinos, como a los estorninos en invierno.",
   "meta_modelo": "",
+  "color_rio": "",
   "clima": "",
   "lentitud": 1,
   "terreno": {

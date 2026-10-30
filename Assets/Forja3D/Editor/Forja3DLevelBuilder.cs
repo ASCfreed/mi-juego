@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; public string direccion = "este"; public float periodo = 5f; public string comportamiento; }
     [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; public bool cuerda; }
     [Serializable]
     public class JuegoDef
@@ -38,6 +38,7 @@ namespace Forja3D.EditorTools
         public float altura_muros = 3f;
         public string color_muros = "#8c8478";
         public string ambiente = "infierno";
+        public string color_rio; // "#rrggbb": agua de los ríos (Estigia negra); vacío = Aqueronte rojizo
         public Linea[] intro;
         public Linea[] salida;
         public string recompensa_arma;   // p. ej. "hoz": sustituye al arma al vencer a todos los jefes
@@ -204,9 +205,10 @@ namespace Forja3D.EditorTools
                     if (!matRio)
                     {
                         matRio = new Material(Shader.Find("Standard"));
-                        matRio.SetColor("_Color", new Color(0.09f, 0.015f, 0.015f));
+                        var colAgua = Hex(n.color_rio, new Color(0.09f, 0.015f, 0.015f));
+                        matRio.SetColor("_Color", colAgua);
                         matRio.SetFloat("_Glossiness", 0.93f); matRio.SetFloat("_Metallic", 0.2f);
-                        matRio.EnableKeyword("_EMISSION"); matRio.SetColor("_EmissionColor", new Color(0.32f, 0.04f, 0.015f));
+                        matRio.EnableKeyword("_EMISSION"); matRio.SetColor("_EmissionColor", string.IsNullOrEmpty(n.color_rio) ? new Color(0.32f, 0.04f, 0.015f) : colAgua * 0.6f);
                         Guardar(matRio, $"rio_{id}");
                     }
                     var agua = GameObject.CreatePrimitive(PrimitiveType.Quad); agua.name = "Rio";
@@ -280,6 +282,15 @@ namespace Forja3D.EditorTools
                         case "jefe": Enemigo(s, p, dinamicos, id, true); break;
                         case "npc": Npc(s, p, dinamicos, id); break;
                         case "moneda": Moneda(p, dinamicos, id); break;
+                        case "rodante":
+                        {
+                            // Avaros y pródigos: de aquí salen rocas que ruedan en la dirección indicada
+                            var lr = new GameObject("LanzaRocas").AddComponent<Forja3DLanzaRocas>();
+                            lr.transform.SetParent(dinamicos); lr.transform.position = p;
+                            lr.direccion = s.direccion == "oeste" ? Vector3.left : s.direccion == "norte" ? Vector3.forward : s.direccion == "sur" ? Vector3.back : Vector3.right;
+                            lr.periodo = s.periodo > 0 ? s.periodo : 5f; lr.radio = Mathf.Min(1.4f, c * 0.38f);
+                            break;
+                        }
                         case "meta": meta = p; break;
                     }
                 }
@@ -661,7 +672,7 @@ namespace Forja3D.EditorTools
         static readonly Dictionary<string, float> Alturas = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
         {
             ["dante"] = 1.8f, ["virgilio"] = 1.82f, ["francesca"] = 1.68f, ["paolo"] = 1.8f, ["condenado"] = 1.78f,
-            ["muerte"] = 3.0f, ["caron"] = 5.4f, ["minos"] = 5.6f, ["homero"] = 1.78f, ["ciacco"] = 1.72f, ["cerbero"] = 3.8f, // Carón y Minos: titanes (≈7 m con EscalaJefe)
+            ["muerte"] = 3.0f, ["caron"] = 5.4f, ["minos"] = 5.6f, ["homero"] = 1.78f, ["ciacco"] = 1.72f, ["cerbero"] = 3.8f, ["pluto"] = 2.6f, ["flegias"] = 3.0f, ["filippo"] = 1.76f, // Carón y Minos: titanes (≈7 m con EscalaJefe)
             ["pantera"] = 1.9f, ["leon"] = 2.4f, ["loba"] = 1.9f, // a la cruz; exageradas a propósito (la loba ×1,3 por jefa)
         };
         // Los jefes se exageran un 30 % para que impongan
@@ -742,7 +753,7 @@ namespace Forja3D.EditorTools
         {
             if (string.IsNullOrEmpty(modelo)) return null;
             // Hoz/guadaña: arma de asta (≈1,9 m), la hoja es el extremo ANCHO y lejano; se empuña por el mango
-            bool asta = modelo.Contains("hoz") || modelo.Contains("guadana") || modelo.Contains("lanza");
+            bool asta = modelo.Contains("hoz") || modelo.Contains("guadana") || modelo.Contains("lanza") || modelo.Contains("remo");
             var anim = portador.GetComponentInChildren<Animator>();
             bool humano = anim && anim.isHuman;
             var mano = humano ? anim.GetBoneTransform(HumanBodyBones.RightHand) : BuscarHueso(portador.transform, "R_Hand", "RightHand", "hand_r", "Hand_R", "mixamorig:RightHand");
@@ -913,6 +924,7 @@ namespace Forja3D.EditorTools
             e.voz = !string.IsNullOrEmpty(s.voz) ? s.voz : fiera ? "fiera" : jefe ? "jefe" : "condenado";
             // Cabezas extra copiadas de la suya (Cerbero: "cabezas": 3)
             if (s.cabezas > 1) { CabezasExtra(g, s.cabezas - 1, id); g.AddComponent<Forja3DCerbero>(); }
+            if (s.comportamiento == "pluto") g.AddComponent<Forja3DPluto>();
             // Arma en la mano del enemigo (la Muerte lleva su hoz)
             if (!string.IsNullOrEmpty(s.arma) && Forja3DImporter.RutaPrefab(s.arma)) Arma(g, s.arma, "ArmaJefe");
             // Aura del pecado (campo "aura" del nivel, o el color de cada fiera por defecto)

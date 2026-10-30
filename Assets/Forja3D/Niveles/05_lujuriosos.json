@@ -29,7 +29,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "V",
@@ -52,7 +55,10 @@
       "clave": false,
       "desvanecer": false,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "F",
@@ -103,7 +109,10 @@
       "clave": true,
       "desvanecer": true,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     },
     {
       "simbolo": "Q",
@@ -130,7 +139,10 @@
       "clave": true,
       "desvanecer": true,
       "arma": "",
-      "cabezas": 0
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": ""
     }
   ],
   "jugador": {
@@ -166,6 +178,7 @@
   "narracion": [],
   "transicion": "Y Dante cayó como cae un cuerpo muerto.\n\nAl volver en sí, el viaje seguía: más abajo lo esperaba la lluvia eterna, maldita, fría y pesada del tercer círculo, donde ladra Cerbero.",
   "meta_modelo": "",
+  "color_rio": "",
   "clima": "",
   "lentitud": 1,
   "terreno": {
