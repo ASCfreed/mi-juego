@@ -85,7 +85,8 @@ namespace Forja3D.EditorTools
             var jsons = Directory.Exists(RutaNiveles)
                 ? Directory.GetFiles(RutaNiveles, "*.json").Where(f => Path.GetFileName(f) != "juego.json").OrderBy(f => f, StringComparer.Ordinal).ToList()
                 : new List<string>();
-            var escenas = new List<string> { ConstruirTitulo() };
+            var titulos = jsons.Select(f => { var n = JsonUtility.FromJson<Nivel>(File.ReadAllText(f)); return n?.titulo ?? Path.GetFileNameWithoutExtension(f); }).ToArray();
+            var escenas = new List<string> { ConstruirTitulo(titulos) };
             if (jsons.Count == 0)
             {
                 Debug.Log("[Forja3D] No hay niveles: construyo el nivel de demostración.");
@@ -97,7 +98,7 @@ namespace Forja3D.EditorTools
         }
 
         // ---------- Pantalla de título (Assets/Forja3D/Niveles/juego.json) ----------
-        static string ConstruirTitulo()
+        static string ConstruirTitulo(string[] titulos)
         {
             var ruta = $"{RutaNiveles}/juego.json";
             var j = File.Exists(ruta) ? JsonUtility.FromJson<JuegoDef>(File.ReadAllText(ruta)) : new JuegoDef();
@@ -108,6 +109,7 @@ namespace Forja3D.EditorTools
             t.titulo = string.IsNullOrEmpty(j.titulo) ? PlayerSettings.productName : j.titulo;
             t.subtitulo = j.subtitulo ?? ""; t.cita = j.cita ?? ""; t.citaTraduccion = j.cita_traduccion ?? "";
             t.colorFondo = Hex(j.color_fondo, t.colorFondo); t.colorTitulo = Hex(j.color_titulo, t.colorTitulo);
+            t.niveles = titulos;
             string r = $"{RutaGenerado}/Escenas/00_titulo.unity";
             EditorSceneManager.SaveScene(escena, r);
             return r;
