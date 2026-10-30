@@ -2,20 +2,20 @@
   "activo": "noche-de-animas",
   "proyectos": [
     {
-      "repo": "ASCfreed/mi-juego",
+      "repo": "FREED000ME/mi-juego",
       "nombre": "dante",
       "rama": "main",
       "tipo": "juego"
     },
     {
-      "repo": "ASCfreed/mi-juego",
+      "repo": "FREED000ME/mi-juego",
       "nombre": "particulas-ra",
       "rama": "particulas-ra",
       "tipo": "basica",
       "creado": "2026-10-29"
     },
     {
-      "repo": "ASCfreed/noche-de-animas",
+      "repo": "FREED000ME/noche-de-animas",
       "nombre": "noche-de-animas",
       "rama": "main",
       "tipo": "juego",
