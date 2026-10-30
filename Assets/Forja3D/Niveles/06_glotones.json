@@ -117,7 +117,7 @@
       "aura": "",
       "fantasma": false,
       "clave": false,
-      "desvanecer": false,
+      "desvanecer": true,
       "arma": "",
       "cabezas": 0
     }

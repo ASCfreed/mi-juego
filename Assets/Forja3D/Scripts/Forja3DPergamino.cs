@@ -242,11 +242,13 @@ namespace Forja3D
                 for (int g = 0; g < 3; g++)
                 {
                     int grado = Forja3DProgreso.Grado(r);
-                    bool tiene = g < grado, siguiente = g == grado, puede = siguiente && Forja3DProgreso.Disponibles > 0;
+                    bool tiene = g < grado, siguiente = g == grado, puede = siguiente && Forja3DProgreso.PuedeComprar(r);
+                    int costo = g + 1;
                     var caja = nodos[r, g].transform.parent.GetComponent<Image>();
                     caja.color = tiene ? new Color(0.55f, 0.36f, 0.12f, 0.95f) : puede ? new Color(0.32f, 0.2f, 0.08f, 0.95f) : new Color(0.14f, 0.1f, 0.08f, 0.9f);
                     nodos[r, g].color = tiene ? new Color(1f, 0.93f, 0.75f) : puede ? new Color(0.95f, 0.82f, 0.55f) : new Color(0.55f, 0.5f, 0.45f);
-                    nodos[r, g].text = (tiene ? "† " : puede ? "+ " : "· ") + Forja3DProgreso.Grados[r, g] + (puede ? "\n<i>(toca para aprender)</i>" : "");
+                    nodos[r, g].text = (tiene ? "† " : puede ? "+ " : "· ") + Forja3DProgreso.Grados[r, g]
+                        + (tiene ? "" : puede ? $"\n<i>(toca para aprender · {costo} punto{(costo > 1 ? "s" : "")})</i>" : $"\n<i>{costo} punto{(costo > 1 ? "s" : "")}</i>");
                 }
         }
     }

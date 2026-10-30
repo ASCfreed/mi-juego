@@ -194,12 +194,15 @@ namespace Forja3D
         {
             Terminado = true;
             Forja3DAudio.Sonar("derrota", null, 0.8f, 0f);
+            xpPerdida = Forja3DProgreso.PerderIntento();
             StartCoroutine(PergaminoDerrota());
         }
+        int xpPerdida;
         System.Collections.IEnumerator PergaminoDerrota()
         {
             yield return new WaitForSecondsRealtime(1.6f);
-            Forja3DPergamino.Mostrar("Has caído", "Y caí como cae un cuerpo muerto.\n\nPero aún no es tu hora, Dante: el camino te espera donde lo dejaste.",
+            Forja3DPergamino.Mostrar("Has caído", "Y caí como cae un cuerpo muerto.\n\nPero aún no es tu hora, Dante: el camino te espera donde lo dejaste."
+                + (xpPerdida > 0 ? $"\n\n<i>Lo aprendido en este intento se pierde: -{xpPerdida} XP.</i>" : ""),
                 "— toca para levantarte —", () => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex), null, true);
         }
 

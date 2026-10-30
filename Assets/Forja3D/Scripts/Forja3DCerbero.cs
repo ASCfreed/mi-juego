@@ -30,7 +30,7 @@ namespace Forja3D
             Transform hueso = null;
             foreach (var t in GetComponentsInChildren<Transform>(true))
                 if (t.name.Contains("Head_0") || (hueso == null && t.name.ToLowerInvariant().Contains("head"))) { hueso = t; if (t.name.Contains("Head_0")) break; }
-            if (hueso) cabezas.Add(new CabezaInfo { t = hueso, hueso = true });
+            if (hueso) cabezas.Add(new CabezaInfo { t = hueso, hueso = true, baseLocal = hueso.localRotation });
             foreach (var t in GetComponentsInChildren<Transform>(true))
                 if (t.name.StartsWith("CabezaCopia")) cabezas.Add(new CabezaInfo { t = t, baseLocal = t.localRotation });
             for (int i = 0; i < cabezas.Count; i++) cabezas[i].fase = i * 2.1f;
@@ -90,8 +90,9 @@ namespace Forja3D
                 else if (Time.time < c.mordiscoHasta) { float k = 1f - (c.mordiscoHasta - Time.time) / 0.45f; cabeceo = 22f * Mathf.Sin(k * Mathf.PI); giro = 0f; } // muerde
                 else { cabeceo = Mathf.Sin(t * 1.3f) * 5f; giro = Mathf.Sin(t * 0.8f) * 9f; }                     // respira y mira
                 var extra = Quaternion.AngleAxis(cabeceo, der) * Quaternion.AngleAxis(giro, arriba);
-                if (c.hueso) c.t.rotation = extra * c.t.rotation;                         // sobre la pose del Animator
-                else c.t.rotation = extra * (c.t.parent ? c.t.parent.rotation * c.baseLocal : c.baseLocal);
+                // Siempre desde la pose de reposo: el clip de caminar de Tripo no escribe la cabeza cada cuadro,
+                // y girar sobre la rotación del cuadro anterior la hacía dar vueltas sin fin
+                c.t.rotation = extra * (c.t.parent ? c.t.parent.rotation * c.baseLocal : c.baseLocal);
             }
         }
     }

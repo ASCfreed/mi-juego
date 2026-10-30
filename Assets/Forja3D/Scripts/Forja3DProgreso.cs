@@ -1,6 +1,7 @@
 // Forja3D — experiencia (XP) y árbol de virtudes de Dante.
-// La XP se gana venciendo almas y jefes, con parries y golpes de gracia; cada 120 XP da un punto de virtud.
-// Los puntos se gastan en las cuatro virtudes cardinales (3 grados cada una). Se guarda con PlayerPrefs.
+// La XP se gana venciendo almas y jefes, con parries y golpes de gracia; cada 200 XP da un punto de virtud.
+// Los puntos se gastan en las cuatro virtudes cardinales (3 grados cada una; el grado N cuesta N puntos: 24 en total).
+// Al morir se pierde la XP ganada en ese intento (no la de niveles anteriores). Se guarda con PlayerPrefs.
 // EXPANSIÓN FUTURA: en PC/iOS el mismo guardado funciona; para nube (Google Play Games / iCloud)
 // bastaría con serializar este estado en JSON y subirlo.
 using System;
@@ -10,7 +11,7 @@ namespace Forja3D
 {
     public static class Forja3DProgreso
     {
-        public const int XPPorPunto = 120;
+        public const int XPPorPunto = 200;
         public static readonly string[] Ramas = { "Fortaleza", "Templanza", "Prudencia", "Justicia" };
         public static readonly string[] Lemas = { "Resistir el dolor", "Dominar el aliento", "Leer el golpe", "Dar a cada uno lo suyo" };
         public static readonly string[,] Grados =
@@ -28,7 +29,29 @@ namespace Forja3D
         public static int Disponibles => Mathf.Max(0, XP / XPPorPunto - Gastados);
         public static int Grado(int rama) => PlayerPrefs.GetInt("f3d_virtud_" + rama, 0);
         public static int XPEnEsteNivel { get; private set; }
-        public static void NuevoNivel() => XPEnEsteNivel = 0;
+        public static void NuevoNivel() { Migrar(); XPEnEsteNivel = 0; }
+
+        // Partidas guardadas con la economía antigua (1 punto por grado, 120 XP): se devuelven las virtudes
+        // para que el jugador las reparta con los precios nuevos. La XP se conserva.
+        static void Migrar()
+        {
+            if (PlayerPrefs.GetInt("f3d_economia", 1) >= 2) return;
+            for (int r = 0; r < 4; r++) PlayerPrefs.DeleteKey("f3d_virtud_" + r);
+            Gastados = 0;
+            PlayerPrefs.SetInt("f3d_economia", 2);
+            PlayerPrefs.Save();
+        }
+        public static int Costo(int rama) => Grado(rama) + 1; // 1, 2 y 3 puntos
+
+        // Al caer: se pierde lo ganado en este intento. Si ya se gastó en virtudes, se conservan,
+        // pero los próximos puntos tardarán más (Disponibles no baja de 0).
+        public static int PerderIntento()
+        {
+            int perdida = XPEnEsteNivel;
+            XP = Mathf.Max(0, XP - perdida); XPEnEsteNivel = 0;
+            PlayerPrefs.Save();
+            return perdida;
+        }
 
         public static void Ganar(int cantidad, string motivo = "")
         {
@@ -40,12 +63,13 @@ namespace Forja3D
             if (Disponibles > antes) Forja3DGameManager.Mensaje("¡NUEVO PUNTO DE VIRTUD!");
         }
 
-        public static bool PuedeComprar(int rama) => rama >= 0 && rama < 4 && Grado(rama) < 3 && Disponibles > 0;
+        public static bool PuedeComprar(int rama) => rama >= 0 && rama < 4 && Grado(rama) < 3 && Disponibles >= Costo(rama);
         public static bool Comprar(int rama)
         {
             if (!PuedeComprar(rama)) return false;
+            int costo = Costo(rama);
             PlayerPrefs.SetInt("f3d_virtud_" + rama, Grado(rama) + 1);
-            Gastados += 1;
+            Gastados += costo;
             PlayerPrefs.Save();
             var p = UnityEngine.Object.FindFirstObjectByType<Forja3DPlayerController>();
             if (p) Aplicar(p, true);

@@ -226,9 +226,11 @@ namespace Forja3D
         void Alertar()
         {
             if (estado != Estado.Patrulla) return;
-            agente.ResetPath();
-            Cambiar(Estado.Alerta);
-            Forja3DAnim.Trigger(anim, "Alert");
+            if (esJefe) agente.ResetPath();
+            proximaRuta = 0f; // traza la ruta hacia Dante en este mismo cuadro
+            // Solo los jefes se detienen a rugir; los demás echan a andar sin pausa
+            if (esJefe) { Cambiar(Estado.Alerta); Forja3DAnim.Trigger(anim, "Alert"); }
+            else Cambiar(Estado.Acecho);
             Forja3DAudio.Sonar("voz_" + voz, Cabeza, esJefe ? 1f : 0.7f, 0.1f);
             if (esJefe) Forja3DFX.Temblor(0.2f, 0.6f);
             proximoAtaque = Time.time + Random.Range(0.8f, 2f);

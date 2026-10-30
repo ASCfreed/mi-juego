@@ -659,7 +659,7 @@ namespace Forja3D.EditorTools
         static readonly Dictionary<string, float> Alturas = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
         {
             ["dante"] = 1.8f, ["virgilio"] = 1.82f, ["francesca"] = 1.68f, ["paolo"] = 1.8f, ["condenado"] = 1.78f,
-            ["muerte"] = 3.0f, ["caron"] = 5.4f, ["minos"] = 5.6f, ["homero"] = 1.78f, ["ciacco"] = 1.72f, ["cerbero"] = 2.6f, // Carón y Minos: titanes (≈7 m con EscalaJefe)
+            ["muerte"] = 3.0f, ["caron"] = 5.4f, ["minos"] = 5.6f, ["homero"] = 1.78f, ["ciacco"] = 1.72f, ["cerbero"] = 3.8f, // Carón y Minos: titanes (≈7 m con EscalaJefe)
             ["pantera"] = 1.9f, ["leon"] = 2.4f, ["loba"] = 1.9f, // a la cruz; exageradas a propósito (la loba ×1,3 por jefa)
         };
         // Los jefes se exageran un 30 % para que impongan
