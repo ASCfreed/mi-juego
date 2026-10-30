@@ -21,7 +21,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: compilar-apk
+  group: compilar-apk-${{ github.ref_name }}
   cancel-in-progress: true
 
 # EXPANSIÓN FUTURA: para PC/iOS/Web, añadir otro job (o una matriz) con targetPlatform
@@ -47,8 +47,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: Library
-          key: Library-Android-v9-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-Android-v9-
+          # Una caché por rama: varios proyectos pueden vivir en ramas del mismo repo sin mezclarse
+          key: Library-Android-v9-${{ github.ref_name }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-Android-v9-${{ github.ref_name }}-
 
       - name: Datos de la app
         env:
