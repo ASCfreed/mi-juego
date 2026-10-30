@@ -924,7 +924,7 @@ namespace Forja3D.EditorTools
                 e.esJefe = true; e.danio = 2; e.velocidad = fiera ? 3.2f : 2.4f; e.enfriamiento = 1.6f;
                 // El alcance crece con el tamaño real del modelo (jefes de 2,5-3 m)
                 float altoReal = AlturaDe(s.modelo, "jefe", fiera) * esc;
-                e.radioDeteccion = 14f; e.radioAtaque = Mathf.Max(1.5f * esc, altoReal * (fiera ? 1.1f : 0.55f)); e.radioPatrulla = 2f; e.probImparable = 0.25f; // un cuadrúpedo es más largo que alto
+                e.radioDeteccion = 14f; e.radioAtaque = Mathf.Max(1.5f * esc, altoReal * (m.Contains("cerbero") ? 0.75f : fiera ? 1.1f : 0.55f)); // Cerbero creció en tamaño, no en alcance (≈3,7 m como antes) e.radioPatrulla = 2f; e.probImparable = 0.25f; // un cuadrúpedo es más largo que alto
             }
         }
 
