@@ -1,7 +1,26 @@
 {
-  "activo": "dante",
+  "activo": "noche-de-animas",
   "proyectos": [
-    { "repo": "ASCfreed/mi-juego", "nombre": "dante", "rama": "main", "tipo": "juego" },
-    { "repo": "ASCfreed/mi-juego", "nombre": "particulas-ra", "rama": "particulas-ra", "tipo": "basica", "creado": "2026-10-29" }
+    {
+      "repo": "ASCfreed/mi-juego",
+      "nombre": "dante",
+      "rama": "main",
+      "tipo": "juego"
+    },
+    {
+      "repo": "ASCfreed/mi-juego",
+      "nombre": "particulas-ra",
+      "rama": "particulas-ra",
+      "tipo": "basica",
+      "creado": "2026-10-29"
+    },
+    {
+      "repo": "ASCfreed/noche-de-animas",
+      "nombre": "noche-de-animas",
+      "rama": "main",
+      "tipo": "juego",
+      "genero": "supervivencia horror 3D",
+      "creado": "2026-10-30"
+    }
   ]
 }
