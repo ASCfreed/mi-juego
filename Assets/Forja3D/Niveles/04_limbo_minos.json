@@ -34,7 +34,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "J",
@@ -55,7 +57,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "V",
@@ -93,7 +97,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "H",
@@ -139,7 +145,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     }
   ],
   "jugador": {

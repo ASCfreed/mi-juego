@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; public string direccion = "este"; public float periodo = 5f; public string comportamiento; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; public string direccion = "este"; public float periodo = 5f; public string comportamiento; public bool pisable; public bool tras_jefe; }
     [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; public bool cuerda; }
     [Serializable]
     public class JuegoDef
@@ -253,7 +253,7 @@ namespace Forja3D.EditorTools
                 for (int col = 0; col < cols; col++)
                 {
                     var s = Sim(n, leyenda, f, col);
-                    if (s == null || (s.tipo != "arbol" && s.tipo != "roca" && s.tipo != "decoracion")) continue;
+                    if (s == null || (s.tipo != "arbol" && s.tipo != "roca" && s.tipo != "decoracion") || s.pisable) continue;
                     var d = Decoracion(s, c, id, rocas, matRoca, rnd);
                     d.transform.SetParent(nivel.transform);
                     d.transform.position = Pos(f, col);
@@ -266,6 +266,32 @@ namespace Forja3D.EditorTools
             surf.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
             surf.BuildNavMesh();
             if (surf.navMeshData) AssetDatabase.CreateAsset(surf.navMeshData, $"{RutaGenerado}/Datos/navmesh_{id}.asset");
+
+            // Decoración pisable (la barca de Flegias): sin colisión y fuera del NavMesh; Dante pelea sobre su cubierta
+            for (int f = 0; f < filas; f++)
+                for (int col = 0; col < cols; col++)
+                {
+                    var s = Sim(n, leyenda, f, col);
+                    if (s == null || !s.pisable || s.tipo != "decoracion") continue;
+                    var g = InstanciarModelo(s.modelo);
+                    if (!g) continue;
+                    foreach (var cc in g.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
+                    var b = Forja3DImporter.Limites(g);
+                    if (b.size.z > b.size.x) { g.transform.rotation = Quaternion.Euler(0, 90, 0) * g.transform.rotation; b = Forja3DImporter.Limites(g); }
+                    // escala = largo en celdas (a lo largo de las columnas del mapa)
+                    float kx = Mathf.Max(1f, s.escala) * c / Mathf.Max(0.01f, b.size.x);
+                    // A lo alto no se escala igual: la borda queda a ~1,2 m sobre la cubierta y no tapa la pelea
+                    float ky = Mathf.Min(kx, 2.6f / Mathf.Max(0.01f, b.size.y));
+                    var esc = g.transform.localScale; g.transform.localScale = new Vector3(esc.x * kx, esc.y * ky, esc.z * kx);
+                    b = Forja3DImporter.Limites(g);
+                    var raiz = new GameObject("BarcaCubierta"); raiz.transform.SetParent(nivel.transform);
+                    raiz.transform.position = Pos(f, col);
+                    g.transform.SetParent(raiz.transform, true);
+                    // El fondo del casco queda bajo el suelo: la cubierta coincide con el terreno
+                    g.transform.position += new Vector3(raiz.transform.position.x - b.center.x, raiz.transform.position.y - b.min.y - b.size.y * 0.5f, raiz.transform.position.z - b.center.z);
+                    foreach (var r in g.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    raiz.AddComponent<Forja3DBarca>();
+                }
 
             Vector3? inicio = null, meta = null;
             var dinamicos = new GameObject("Dinamicos").transform;
@@ -1125,6 +1151,14 @@ namespace Forja3D.EditorTools
             var npc = g.AddComponent<Forja3DNPC>();
             npc.nombre = s.nombre ?? ""; npc.dialogo = s.dialogo; npc.seguir = s.seguir; npc.clave = s.clave; npc.desvanecer = s.desvanecer;
             if (s.clave || s.desvanecer) npc.distancia = 4f;
+            // Aparece al caer el último jefe (Filippo Argenti trepa a la barca cuando cae Flegias)
+            if (s.tras_jefe)
+            {
+                var ap = new GameObject("Aparece_" + g.name).AddComponent<Forja3DTrasJefe>();
+                ap.transform.SetParent(padre); ap.transform.position = p;
+                ap.personaje = npc;
+                g.SetActive(false);
+            }
         }
 
         static void Moneda(Vector3 p, Transform padre, string id)

@@ -3,15 +3,15 @@
   "celda": 3,
   "mapa": [
     "####################",
-    "#P.V....I......I...#",
-    "#~~~~~~~~~~~~~~~...#",
-    "#..I..........I....#",
-    "#...~~~~~~~~~~~~~~~#",
-    "#.I......A......I..#",
-    "#~~~~~~~~~~~~~~~...#",
-    "#.B...I......I.....#",
-    "#....I...G.....I...#",
-    "#..R..........R..M.#",
+    "#~~~~~~~~~~~~~~~~~~#",
+    "#~~~~~~~~~~~~~~~~~~#",
+    "#P.V...I.....A.I...#",
+    "#.....I....I.......#",
+    "#........B...G....M#",
+    "#......I......I....#",
+    "#....I.......I.....#",
+    "#~~~~~~~~~~~~~~~~~~#",
+    "#~~~~~~~~~~~~~~~~~~#",
     "####################"
   ],
   "leyenda": [
@@ -34,7 +34,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "G",
@@ -55,14 +57,16 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "B",
       "tipo": "decoracion",
       "modelo": "barca",
       "vida": 2,
-      "escala": 1,
+      "escala": 16,
       "color": "",
       "nombre": "",
       "seguir": false,
@@ -76,7 +80,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": true,
+      "tras_jefe": false
     },
     {
       "simbolo": "V",
@@ -94,7 +100,7 @@
         },
         {
           "quien": "Virgilio",
-          "texto": "Su barca embiste y su remo golpea fuerte. Tira de él con la Cuerda cuando lo tengas cerca."
+          "texto": "Esta barca es suya y su remo golpea fuerte. Tira de él con la Cuerda y échalo al agua."
         }
       ],
       "voz": "",
@@ -106,7 +112,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "A",
@@ -150,13 +158,15 @@
       "voz": "",
       "aura": "",
       "fantasma": false,
-      "clave": false,
+      "clave": true,
       "desvanecer": true,
       "arma": "",
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": true
     }
   ],
   "jugador": {
@@ -180,11 +190,11 @@
     },
     {
       "quien": "Consejo",
-      "texto": "El fango de la Estigia frena tus pasos. Rodea la laguna: no se puede cruzar a pie."
+      "texto": "Peleas sobre la barca de Flegias: a cada lado, el agua negra de la Estigia. Los iracundos trepan por la borda."
     },
     {
       "quien": "Consejo",
-      "texto": "Flegias golpea con su remo. La Cuerda lo arrastra hacia ti y lo aturde un momento."
+      "texto": "Vence a Flegias y escucha al alma que suba a bordo: entonces la barca llegará a la orilla de Dite."
     }
   ],
   "salida": [
@@ -206,13 +216,13 @@
   "meta_modelo": "puerta",
   "color_rio": "#0c140e",
   "clima": "",
-  "lentitud": 0.8,
+  "lentitud": 1,
   "terreno": {
     "tipo": "arena",
-    "colinas": 0.25,
+    "colinas": 0,
     "semilla": 8
   },
-  "objetivo": "jefe",
+  "objetivo": "dialogos",
   "cielo": "#1f2a22",
   "niebla": true,
   "altura_muros": 4,

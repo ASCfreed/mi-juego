@@ -13,6 +13,7 @@ namespace Forja3D
         public bool seguir = false;
         public float distancia = 3f;
         public bool clave = false; // hay que escucharlo para abrir la meta (objetivo "dialogos")
+        [System.NonSerialized] public bool claveRegistrada; // ya la contó Forja3DTrasJefe (aparece más tarde)
         public bool desvanecer = false; // al terminar de hablar se vuelve sombra y se disuelve (Homero, Francesca, Paolo)
 
         Transform jugador;
@@ -28,7 +29,7 @@ namespace Forja3D
             if (anim) anim.applyRootMotion = false;
             Forja3DSinRaiz.Poner(anim);
             agente = GetComponent<NavMeshAgent>();
-            if (clave) Forja3DGameManager.RegistrarClave();
+            if (clave && !claveRegistrada) Forja3DGameManager.RegistrarClave();
         }
         bool contado;
 

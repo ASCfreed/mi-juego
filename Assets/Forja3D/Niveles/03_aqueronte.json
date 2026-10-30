@@ -33,7 +33,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "K",
@@ -54,7 +56,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "V",
@@ -80,7 +84,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     }
   ],
   "jugador": {

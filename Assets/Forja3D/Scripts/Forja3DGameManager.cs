@@ -48,6 +48,7 @@ namespace Forja3D
         public static void JefeDerrotado()
         {
             jefesDerrotados++; inst?.Aviso("¡Jefe derrotado!"); inst?.Revisar();
+            if (jefesDerrotados >= jefes) AlCaerJefes?.Invoke();
             // Último jefe caído: si el nivel da un arma (la hoz de la Muerte), Dante la toma
             if (inst && jefesDerrotados >= jefes && inst.controlJugador && inst.controlJugador.TieneRecompensa)
                 inst.StartCoroutine(inst.Recompensa());
@@ -61,7 +62,8 @@ namespace Forja3D
         }
         // Personajes "clave" (Francesca, Paolo…): hay que escucharlos para abrir la meta
         public static void RegistrarClave() => claves++;
-        public static void ClaveOida() { clavesOidas++; inst?.Revisar(); }
+        public static event System.Action AlCaerJefes, AlOirClaves;
+        public static void ClaveOida() { clavesOidas++; inst?.Revisar(); if (clavesOidas >= claves) AlOirClaves?.Invoke(); }
         public static void RegistrarMoneda() => monedas++;
         public static void MonedaRecogida() { recogidas++; inst?.Revisar(); }
         public static void MetaAlcanzada()
@@ -124,7 +126,7 @@ namespace Forja3D
             Objetivo.Enemigos => derrotados >= enemigos,
             Objetivo.Monedas => recogidas >= monedas,
             Objetivo.Jefe => jefesDerrotados >= jefes,
-            Objetivo.Dialogos => clavesOidas >= claves,
+            Objetivo.Dialogos => clavesOidas >= claves && jefesDerrotados >= jefes,
             _ => true,
         };
 

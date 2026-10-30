@@ -34,7 +34,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "A",
@@ -55,7 +57,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "L",
@@ -76,7 +80,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "W",
@@ -97,7 +103,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     },
     {
       "simbolo": "V",
@@ -143,7 +151,9 @@
       "cabezas": 0,
       "direccion": "este",
       "periodo": 5,
-      "comportamiento": ""
+      "comportamiento": "",
+      "pisable": false,
+      "tras_jefe": false
     }
   ],
   "jugador": {
