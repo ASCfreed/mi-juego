@@ -70,6 +70,8 @@ namespace Forja3D
             CrearBoton("ESQUIVAR", new Vector2(-230, 500), 170, new Color(0.3f, 0.75f, 0.55f, 0.65f), Forja3DInput.PulsarEsquiva);
             CrearBoton("SALTAR", new Vector2(-480, 400), 140, new Color(0.25f, 0.55f, 0.95f, 0.6f), Forja3DInput.PulsarSalto);
             CrearBoton("CORRER", new Vector2(-740, 120), 135, new Color(0.6f, 0.6f, 0.65f, 0.55f), Forja3DInput.AlternarCorrer, null, () => Forja3DInput.CorrerActivo);
+            // Solo en los niveles donde Dante lleva la Cuerda
+            if (FindFirstObjectByType<Forja3DCuerda>()) CrearBoton("CUERDA", new Vector2(-470, 650), 140, new Color(0.62f, 0.45f, 0.25f, 0.65f), Forja3DInput.PulsarCuerda);
         }
 
         void CrearBoton(string texto, Vector2 pos, float tam, Color color, System.Action alPulsar, System.Action alSoltar = null, System.Func<bool> encendido = null)

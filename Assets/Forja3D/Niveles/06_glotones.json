@@ -1,0 +1,187 @@
+{
+  "titulo": "V · Los glotones",
+  "celda": 3,
+  "mapa": [
+    "####################",
+    "#P.V..E.....E...R..#",
+    "#..R......E.....E..#",
+    "#.E....##......R...#",
+    "#......##..E.......#",
+    "#..E.......K....E..#",
+    "#....R..........##.#",
+    "#.E......E...R..##.#",
+    "#..........E.......#",
+    "#...R.....E....A..M#",
+    "####################"
+  ],
+  "leyenda": [
+    {
+      "simbolo": "E",
+      "tipo": "enemigo",
+      "modelo": "condenado",
+      "vida": 3,
+      "escala": 1,
+      "color": "",
+      "nombre": "Glotón",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0
+    },
+    {
+      "simbolo": "K",
+      "tipo": "jefe",
+      "modelo": "cerbero",
+      "vida": 34,
+      "escala": 1,
+      "color": "",
+      "nombre": "Cerbero",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 3
+    },
+    {
+      "simbolo": "V",
+      "tipo": "npc",
+      "modelo": "virgilio",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Virgilio",
+      "seguir": true,
+      "dialogo": [
+        {
+          "quien": "Virgilio",
+          "texto": "No temas: su hambre es su debilidad. Llénale las fauces de tierra y callará."
+        }
+      ],
+      "voz": "",
+      "aura": "",
+      "fantasma": true,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0
+    },
+    {
+      "simbolo": "A",
+      "tipo": "npc",
+      "modelo": "ciacco",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Ciacco",
+      "seguir": false,
+      "dialogo": [
+        {
+          "quien": "Ciacco",
+          "texto": "¡Oh tú, que eres traído por este infierno, reconóceme si sabes! Tú fuiste hecho antes de que yo fuera deshecho."
+        },
+        {
+          "quien": "Dante",
+          "texto": "Tu angustia te desfigura tanto que no te recuerdo. Dime quién eres, tú que estás en un lugar tan doloroso."
+        },
+        {
+          "quien": "Ciacco",
+          "texto": "Vuestros ciudadanos me llamaron Ciacco. Por la dañosa culpa de la gula, como ves, me rompo bajo la lluvia."
+        },
+        {
+          "quien": "Ciacco",
+          "texto": "Tras larga disputa llegarán a la sangre, y el bando salvaje echará al otro con mucha ofensa. Justos hay dos, y nadie los escucha."
+        },
+        {
+          "quien": "Ciacco",
+          "texto": "Soberbia, envidia y avaricia son las tres chispas que han encendido los corazones."
+        },
+        {
+          "quien": "",
+          "texto": "Torció los ojos, me miró un poco y bajó la cabeza; cayó con ella entre los otros ciegos."
+        },
+        {
+          "quien": "Virgilio",
+          "texto": "Ya no despertará hasta que suene la trompeta del ángel."
+        }
+      ],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0
+    }
+  ],
+  "jugador": {
+    "modelo": "dante",
+    "vida": 7,
+    "arma": "hoz",
+    "cuerda": true
+  },
+  "intro": [
+    {
+      "quien": "",
+      "texto": "Al volver en mí, veo a mi alrededor nuevos tormentos y nuevos atormentados, adonde quiera que me mueva y me vuelva."
+    },
+    {
+      "quien": "",
+      "texto": "Estoy en el tercer círculo, el de la lluvia eterna, maldita, fría y pesada: granizo grueso, agua sucia y nieve caen por el aire tenebroso, y apesta la tierra que la recibe."
+    },
+    {
+      "quien": "",
+      "texto": "Cerbero, fiera cruel y monstruosa, ladra con tres gargantas como un perro sobre la gente que aquí está sumergida."
+    },
+    {
+      "quien": "Consejo",
+      "texto": "CUERDA: lanza un puñado de tierra a la cabeza que tengas delante. Una cabeza saciada deja de morder."
+    },
+    {
+      "quien": "Consejo",
+      "texto": "Con dos cabezas saciadas, la tercera queda expuesta y recibe el doble de daño. Si Cerbero se enfurece, devora almas para curarse: no lo dejes."
+    },
+    {
+      "quien": "Consejo",
+      "texto": "El fango frena tus pasos. Contra los glotones, la Cuerda también sirve para atraerlos."
+    }
+  ],
+  "salida": [
+    {
+      "quien": "",
+      "texto": "Mi guía abrió las manos, tomó tierra y, con los puños llenos, la arrojó dentro de las fauces hambrientas."
+    },
+    {
+      "quien": "",
+      "texto": "Como el perro que ladrando ansia y se calma cuando muerde su comida, así callaron las caras sucias del demonio Cerbero."
+    }
+  ],
+  "recompensa_arma": "",
+  "recompensa_nombre": "",
+  "recompensa_dialogo": [],
+  "capitulo": "Canto VI",
+  "narracion": [],
+  "transicion": "Así pasamos por la sucia mezcla de las sombras y de la lluvia, a pasos lentos, hablando un poco de la vida futura.\n\nLlegaron al lugar donde se desciende, y allí encontraron a Pluto, el gran enemigo.",
+  "meta_modelo": "",
+  "clima": "lluvia",
+  "lentitud": 0.8,
+  "terreno": {
+    "tipo": "arena",
+    "colinas": 0.5,
+    "semilla": 6
+  },
+  "objetivo": "jefe",
+  "cielo": "#2c2f2a",
+  "niebla": true,
+  "altura_muros": 4,
+  "color_muros": "#3a3630",
+  "ambiente": "tormenta"
+}

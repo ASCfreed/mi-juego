@@ -28,7 +28,8 @@
       "fantasma": false,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     },
     {
       "simbolo": "V",
@@ -50,7 +51,8 @@
       "fantasma": true,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     },
     {
       "simbolo": "F",
@@ -100,7 +102,8 @@
       "fantasma": false,
       "clave": true,
       "desvanecer": true,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     },
     {
       "simbolo": "Q",
@@ -126,13 +129,15 @@
       "fantasma": false,
       "clave": true,
       "desvanecer": true,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     }
   ],
   "jugador": {
     "modelo": "dante",
     "vida": 7,
-    "arma": "hoz"
+    "arma": "hoz",
+    "cuerda": false
   },
   "intro": [
     {
@@ -159,8 +164,10 @@
   "recompensa_dialogo": [],
   "capitulo": "Canto V",
   "narracion": [],
-  "transicion": "Y Dante cayó como cae un cuerpo muerto.\n\nAl volver en sí, el viaje seguía: más abajo lo esperaba la lluvia eterna, maldita, fría y pesada del tercer círculo… pero esa es otra parte del camino.",
+  "transicion": "Y Dante cayó como cae un cuerpo muerto.\n\nAl volver en sí, el viaje seguía: más abajo lo esperaba la lluvia eterna, maldita, fría y pesada del tercer círculo, donde ladra Cerbero.",
   "meta_modelo": "",
+  "clima": "",
+  "lentitud": 1,
   "terreno": {
     "tipo": "piedra",
     "colinas": 1,

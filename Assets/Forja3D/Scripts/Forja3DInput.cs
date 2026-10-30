@@ -26,7 +26,7 @@ namespace Forja3D
         public static Vector2 MiradaTactil;     // grados acumulados este frame
         public static bool CubrirTactil;        // botón CUBRIR mantenido
         public static bool CorrerActivo;        // botón CORRER (alterna)
-        static int saltoFrame = -10, ataqueFrame = -10, esquivaFrame = -10;
+        static int saltoFrame = -10, ataqueFrame = -10, esquivaFrame = -10, cuerdaFrame = -10;
 
         // PC con pantalla táctil también cuenta como táctil.
         public static bool EsTactil => Application.isMobilePlatform || Input.touchCount > 0;
@@ -35,6 +35,9 @@ namespace Forja3D
         public static void PulsarAtaque() => ataqueFrame = Time.frameCount;
         public static void PulsarEsquiva() => esquivaFrame = Time.frameCount;
         public static void AlternarCorrer() => CorrerActivo = !CorrerActivo;
+        public static void PulsarCuerda() => cuerdaFrame = Time.frameCount;
+        // CUERDA (toque) → lanzar la cuerda: tierra a una fauce de Cerbero, atraer enemigos u objetos. PC: F
+        public static bool Cuerda => Pulso(ref cuerdaFrame) || (!EsTactil && Input.GetKeyDown(KeyCode.F));
 
         public static Vector2 Mover
         {

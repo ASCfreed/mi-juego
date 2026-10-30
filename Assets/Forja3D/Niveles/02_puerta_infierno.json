@@ -30,7 +30,8 @@
       "fantasma": false,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     },
     {
       "simbolo": "J",
@@ -47,7 +48,8 @@
       "fantasma": false,
       "clave": false,
       "desvanecer": false,
-      "arma": "hoz"
+      "arma": "hoz",
+      "cabezas": 0
     },
     {
       "simbolo": "V",
@@ -73,13 +75,15 @@
       "fantasma": true,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     }
   ],
   "jugador": {
     "modelo": "dante",
     "vida": 6,
-    "arma": "espada"
+    "arma": "espada",
+    "cuerda": false
   },
   "intro": [
     {
@@ -129,6 +133,8 @@
   "narracion": [],
   "transicion": "Pasada la puerta, el aire se llenó de suspiros bajo un cielo sin estrellas. Corrían allí, detrás de una bandera que nunca se detiene, los que vivieron sin infamia y sin alabanza.\n\nMás allá se abría una ribera, y en ella esperaban en silencio las almas, mirando el agua oscura por donde llegaría un barquero viejo de ojos como brasas.",
   "meta_modelo": "",
+  "clima": "",
+  "lentitud": 1,
   "terreno": {
     "tipo": "piedra",
     "colinas": 0.7,

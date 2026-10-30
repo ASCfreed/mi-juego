@@ -15,6 +15,7 @@ namespace Forja3D
         // Lo usa el jugador para bloquear/hacer parry: recibe (daño, atacante, imparable) y devuelve el daño final
         public Func<int, Transform, bool, int> Interceptar;
         public float InvulnerableHasta;   // esquiva: frames de invulnerabilidad
+        public float multiplicadorDanio = 1f; // >1 = herida expuesta (p. ej. Cerbero con dos cabezas saciadas)
         public Transform UltimoAtacante { get; private set; }
 
         float ultimoGolpe = -99f;
@@ -27,6 +28,7 @@ namespace Forja3D
             if (Muerto || Time.time - ultimoGolpe < invulnerable || Time.time < InvulnerableHasta) return false;
             if (Interceptar != null) cantidad = Interceptar(cantidad, fuente, imparable);
             if (cantidad <= 0) return false;
+            if (!esJugador && multiplicadorDanio > 1f) cantidad = Mathf.CeilToInt(cantidad * multiplicadorDanio);
             ultimoGolpe = Time.time;
             UltimoAtacante = fuente;
             Vida = Mathf.Max(0, Vida - cantidad);

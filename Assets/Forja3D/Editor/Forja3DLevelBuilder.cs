@@ -14,8 +14,8 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; }
-    [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; }
+    [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; public bool cuerda; }
     [Serializable]
     public class JuegoDef
     {
@@ -44,6 +44,8 @@ namespace Forja3D.EditorTools
         public string recompensa_nombre; // texto: "LA HOZ DE LA MUERTE"
         public Linea[] recompensa_dialogo;
         public string meta_modelo;      // "barca": la meta es la barca en la orilla (sin puerta)
+        public string clima;            // "lluvia": lluvia y granizo que siguen a la cámara (3.er círculo)
+        public float lentitud = 1f;     // < 1: el suelo frena a Dante (fango de los glotones)
         public string transicion;       // texto del pergamino al terminar el nivel: hacia dónde va Dante
         public string capitulo;         // encabezado del pergamino al empezar ("Canto I")
         public Linea[] narracion;       // texto del pergamino al empezar (si no, se usan las líneas del narrador de la intro)
@@ -299,6 +301,7 @@ namespace Forja3D.EditorTools
             var cam = camGo.AddComponent<Camera>(); cam.farClipPlane = 400; camGo.AddComponent<AudioListener>();
             camGo.transform.position = inicio.Value + new Vector3(0, 4, -5);
             camGo.AddComponent<Forja3DCamera>().objetivo = GameObject.FindWithTag("Player").transform;
+            if (n.clima == "lluvia") Lluvia(camGo.transform);
             var gm = new GameObject("Forja3D").AddComponent<Forja3DGameManager>();
             gm.titulo = n.titulo;
             gm.intro = n.intro; gm.salida = n.salida;
@@ -656,7 +659,7 @@ namespace Forja3D.EditorTools
         static readonly Dictionary<string, float> Alturas = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
         {
             ["dante"] = 1.8f, ["virgilio"] = 1.82f, ["francesca"] = 1.68f, ["paolo"] = 1.8f, ["condenado"] = 1.78f,
-            ["muerte"] = 3.0f, ["caron"] = 5.4f, ["minos"] = 5.6f, ["homero"] = 1.78f, // Carón y Minos: titanes (≈7 m con EscalaJefe)
+            ["muerte"] = 3.0f, ["caron"] = 5.4f, ["minos"] = 5.6f, ["homero"] = 1.78f, ["ciacco"] = 1.72f, ["cerbero"] = 2.6f, // Carón y Minos: titanes (≈7 m con EscalaJefe)
             ["pantera"] = 1.9f, ["leon"] = 2.4f, ["loba"] = 1.9f, // a la cruz; exageradas a propósito (la loba ×1,3 por jefa)
         };
         // Los jefes se exageran un 30 % para que impongan
@@ -726,6 +729,8 @@ namespace Forja3D.EditorTools
                 if (premio) { premio.SetActive(false); var pc = g.GetComponent<Forja3DPlayerController>(); pc.nombreRecompensa = n.recompensa_nombre ?? ""; }
             }
             if (!conAsta && Forja3DImporter.RutaPrefab("escudo")) Escudo(g, "escudo"); // con la hoz se cubre con el asta
+            if (n.lentitud > 0f && n.lentitud < 1f) { control.velocidadTrote *= n.lentitud; control.velocidadCorrer *= n.lentitud; }
+            if (n.jugador != null && n.jugador.cuerda) CuerdaEnCintura(g, id);
         }
 
         // Coloca un arma generada (p. ej. "espada") en la mano derecha de un humanoide.
@@ -904,6 +909,8 @@ namespace Forja3D.EditorTools
             string m = (s.modelo ?? "").ToLowerInvariant();
             bool fiera = m.Contains("pantera") || m.Contains("leon") || m.Contains("lob") || m.Contains("perro") || m.Contains("cerbero");
             e.voz = !string.IsNullOrEmpty(s.voz) ? s.voz : fiera ? "fiera" : jefe ? "jefe" : "condenado";
+            // Cabezas extra copiadas de la suya (Cerbero: "cabezas": 3)
+            if (s.cabezas > 1) { CabezasExtra(g, s.cabezas - 1, id); g.AddComponent<Forja3DCerbero>(); }
             // Arma en la mano del enemigo (la Muerte lleva su hoz)
             if (!string.IsNullOrEmpty(s.arma) && Forja3DImporter.RutaPrefab(s.arma)) Arma(g, s.arma, "ArmaJefe");
             // Aura del pecado (campo "aura" del nivel, o el color de cada fiera por defecto)
@@ -973,6 +980,117 @@ namespace Forja3D.EditorTools
             var gr = new Gradient(); gr.SetKeys(new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) }, new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.85f, 0.25f), new GradientAlphaKey(0f, 1f) });
             col.color = gr;
             var r = aura.GetComponent<ParticleSystemRenderer>(); r.sharedMaterial = MatParticula(); r.renderMode = ParticleSystemRenderMode.Billboard;
+            ps.Play();
+        }
+
+        // ---------- Cabezas extra (Cerbero) ----------
+        // Copia la cabeza del propio modelo: toma los vértices que mueven los huesos de la cabeza, los fija en el
+        // espacio del hueso y pone las copias a los lados del cuello, giradas hacia fuera. Sin modelos nuevos.
+        static void CabezasExtra(GameObject g, int extra, string id)
+        {
+            var smr = g.GetComponentInChildren<SkinnedMeshRenderer>();
+            if (!smr || !smr.sharedMesh) { Debug.LogWarning("[Forja3D] Cabezas extra: el modelo no tiene malla con piel."); return; }
+            var huesos = smr.bones;
+            Transform cabeza = null;
+            foreach (var b in huesos) if (b && b.name.Contains("Head_0")) { cabeza = b; break; }
+            if (!cabeza) foreach (var b in huesos) if (b && b.name.ToLowerInvariant().Contains("head")) { cabeza = b; break; }
+            if (!cabeza || !cabeza.parent) { Debug.LogWarning("[Forja3D] Cabezas extra: no encuentro el hueso de la cabeza."); return; }
+            var deCabeza = new bool[huesos.Length];
+            for (int i = 0; i < huesos.Length; i++) deCabeza[i] = huesos[i] && huesos[i].IsChildOf(cabeza);
+            var malla = smr.sharedMesh;
+            var verts = malla.vertices; var norms = malla.normals; var uvs = malla.uv; var pesos = malla.boneWeights; var bind = malla.bindposes;
+            if (pesos == null || pesos.Length != verts.Length) { Debug.LogWarning("[Forja3D] Cabezas extra: la malla no tiene pesos."); return; }
+            Matrix4x4 M(int i) => huesos[i] ? huesos[i].localToWorldMatrix * bind[i] : Matrix4x4.identity;
+            var aLocal = cabeza.worldToLocalMatrix;
+            var mapa = new Dictionary<int, int>(); var nv = new List<Vector3>(); var nn = new List<Vector3>(); var nu = new List<Vector2>();
+            var centro = Vector3.zero;
+            float PesoCabeza(BoneWeight w) => (deCabeza[w.boneIndex0] ? w.weight0 : 0) + (deCabeza[w.boneIndex1] ? w.weight1 : 0) + (deCabeza[w.boneIndex2] ? w.weight2 : 0) + (deCabeza[w.boneIndex3] ? w.weight3 : 0);
+            int Vertice(int i)
+            {
+                if (mapa.TryGetValue(i, out int j)) return j;
+                var w = pesos[i];
+                var m = new Matrix4x4();
+                for (int r = 0; r < 16; r++) m[r] = M(w.boneIndex0)[r] * w.weight0 + M(w.boneIndex1)[r] * w.weight1 + M(w.boneIndex2)[r] * w.weight2 + M(w.boneIndex3)[r] * w.weight3;
+                var pm = m.MultiplyPoint3x4(verts[i]);
+                centro += pm;
+                nv.Add(aLocal.MultiplyPoint3x4(pm));
+                nn.Add(norms != null && norms.Length == verts.Length ? aLocal.MultiplyVector(m.MultiplyVector(norms[i])).normalized : Vector3.up);
+                nu.Add(uvs != null && uvs.Length == verts.Length ? uvs[i] : Vector2.zero);
+                mapa[i] = nv.Count - 1; return nv.Count - 1;
+            }
+            var sub = new List<int[]>();
+            for (int sm = 0; sm < malla.subMeshCount; sm++)
+            {
+                var tri = malla.GetTriangles(sm); var res = new List<int>();
+                for (int k = 0; k + 2 < tri.Length; k += 3)
+                    if (PesoCabeza(pesos[tri[k]]) >= 0.5f && PesoCabeza(pesos[tri[k + 1]]) >= 0.5f && PesoCabeza(pesos[tri[k + 2]]) >= 0.5f)
+                    { res.Add(Vertice(tri[k])); res.Add(Vertice(tri[k + 1])); res.Add(Vertice(tri[k + 2])); }
+                sub.Add(res.ToArray());
+            }
+            if (nv.Count < 30) { Debug.LogWarning($"[Forja3D] Cabezas extra: la cabeza tiene muy pocos vértices ({nv.Count})."); return; }
+            centro /= nv.Count;
+            var copia = new Mesh { name = $"cabeza_{id}" };
+            if (nv.Count > 65000) copia.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            copia.SetVertices(nv); copia.SetNormals(nn); copia.SetUVs(0, nu);
+            copia.subMeshCount = sub.Count; for (int k = 0; k < sub.Count; k++) copia.SetTriangles(sub[k], k);
+            copia.RecalculateBounds();
+            AssetDatabase.CreateAsset(copia, $"{RutaGenerado}/Datos/cabeza_{id}_{g.name}.asset");
+
+            // Ancho de la cabeza en el eje lateral del cuerpo
+            float ancho = 0f; var der = g.transform.right;
+            foreach (var v in nv) ancho = Mathf.Max(ancho, Mathf.Abs(Vector3.Dot(cabeza.TransformPoint(v) - centro, der)));
+            var largo = g.transform.forward; var arriba = g.transform.up;
+            for (int k = 0; k < extra; k++)
+            {
+                float lado = k % 2 == 0 ? -1f : 1f; float fila = 1 + k / 2;
+                var go = new GameObject(lado < 0 ? "CabezaCopia_Izq" : "CabezaCopia_Der", typeof(MeshFilter), typeof(MeshRenderer));
+                go.GetComponent<MeshFilter>().sharedMesh = copia;
+                go.GetComponent<MeshRenderer>().sharedMaterials = smr.sharedMaterials;
+                go.transform.SetParent(cabeza, false);   // hereda la escala del hueso
+                var rot = Quaternion.AngleAxis(lado * 30f * fila, arriba) * cabeza.rotation;
+                var objetivo = centro + der * lado * ancho * 1.55f * fila - largo * ancho * 0.5f * fila + arriba * ancho * 0.12f;
+                var pivote = objetivo - (rot * Quaternion.Inverse(cabeza.rotation)) * (centro - cabeza.position);
+                go.transform.SetPositionAndRotation(pivote, rot);
+                go.transform.SetParent(cabeza.parent, true); // del cuello: se mueve con él, pero no copia a la cabeza
+                GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)0);
+            }
+        }
+
+        // La Cuerda enrollada en la cintura (izquierda) y el componente que la lanza
+        static void CuerdaEnCintura(GameObject g, string id)
+        {
+            var c = g.AddComponent<Forja3DCuerda>();
+            var mat = new Material(Shader.Find("Unlit/Color")) { name = "cuerda_lanzada" };
+            mat.color = new Color(0.47f, 0.34f, 0.2f);
+            Guardar(mat, $"cuerda_{id}");
+            c.material = mat;
+            var anim = g.GetComponentInChildren<Animator>();
+            var cadera = anim && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.Hips) : null;
+            if (!cadera || !Forja3DImporter.RutaPrefab("cuerda")) return;
+            var rollo = InstanciarModelo("cuerda");
+            foreach (var col in rollo.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(col);
+            var b = Forja3DImporter.Limites(rollo);
+            float esc = g.transform.lossyScale.y;
+            rollo.transform.localScale *= 0.32f * esc / Mathf.Max(0.001f, Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z)));
+            b = Forja3DImporter.Limites(rollo);
+            rollo.transform.position += cadera.position - g.transform.right * 0.2f * esc - b.center;
+            rollo.transform.SetParent(cadera, true);
+            rollo.name = "CuerdaEnrollada";
+        }
+
+        // Lluvia y granizo pegados a la cámara (no hace falta cubrir todo el mapa)
+        static void Lluvia(Transform cam)
+        {
+            var go = new GameObject("Lluvia"); go.transform.SetParent(cam, false); go.transform.localPosition = new Vector3(0, 6f, 6f);
+            var ps = go.AddComponent<ParticleSystem>(); ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main; main.startLifetime = 1.1f; main.startSpeed = 18f; main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.06f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.6f, 0.65f, 0.75f, 0.45f), new Color(0.8f, 0.82f, 0.9f, 0.6f));
+            main.maxParticles = 1500; main.simulationSpace = ParticleSystemSimulationSpace.World; main.gravityModifier = 1f;
+            var em = ps.emission; em.rateOverTime = 900f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(26f, 1f, 26f);
+            go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f); // emite hacia abajo
+            var r = go.GetComponent<ParticleSystemRenderer>(); r.sharedMaterial = MatParticula();
+            r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.06f; r.lengthScale = 1.5f;
             ps.Play();
         }
 

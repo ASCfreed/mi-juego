@@ -31,6 +31,10 @@ namespace Forja3D
         public string nombre = "";
 
         public static readonly List<Forja3DEnemy> Activos = new List<Forja3DEnemy>();
+        // Ganchos para comportamientos especiales (Cerbero y sus tres cabezas)
+        public event System.Action AlAtacar;
+        public System.Func<bool> PuedeAtacar;
+        public bool Furioso => furioso;
         static readonly List<Forja3DEnemy> conTurno = new List<Forja3DEnemy>();
         const int MaxAtacantes = 2;
 
@@ -250,7 +254,13 @@ namespace Forja3D
 
         IEnumerator Atacar()
         {
+            if (PuedeAtacar != null && !PuedeAtacar())
+            {
+                // Todas las cabezas ocupadas (Cerbero tragando tierra): no muerde
+                proximoAtaque = Time.time + enfriamiento; SoltarTurno(); Cambiar(Estado.Recuperando); yield break;
+            }
             Cambiar(Estado.Atacando);
+            AlAtacar?.Invoke();
             bool area = esJefe && imparable;
             if (Forja3DAnim.Tiene(anim, "Attack", AnimatorControllerParameterType.Trigger))
             {

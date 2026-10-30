@@ -277,6 +277,8 @@ namespace Forja3D
             vy = 0f; empuje = Vector3.zero; fueraDesde = -1f;
         }
 
+        public void GastarEstamina(float cantidad) => Gastar(cantidad);
+
         void Gastar(float cantidad, bool golpe = true)
         {
             Estamina = Mathf.Max(0f, Estamina - cantidad);

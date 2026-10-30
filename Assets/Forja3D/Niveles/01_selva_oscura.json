@@ -30,7 +30,8 @@
       "fantasma": false,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     },
     {
       "simbolo": "A",
@@ -47,7 +48,8 @@
       "fantasma": false,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     },
     {
       "simbolo": "L",
@@ -64,7 +66,8 @@
       "fantasma": false,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     },
     {
       "simbolo": "W",
@@ -81,7 +84,8 @@
       "fantasma": false,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     },
     {
       "simbolo": "V",
@@ -123,13 +127,15 @@
       "fantasma": true,
       "clave": false,
       "desvanecer": false,
-      "arma": ""
+      "arma": "",
+      "cabezas": 0
     }
   ],
   "jugador": {
     "modelo": "dante",
     "vida": 6,
-    "arma": "espada"
+    "arma": "espada",
+    "cuerda": false
   },
   "intro": [
     {
@@ -170,6 +176,8 @@
   "narracion": [],
   "transicion": "Dejaron atrás la selva y el monte que Dante no pudo subir. Virgilio iba delante; Dante, detrás, con el miedo todavía en el pecho.\n\nAl caer la tarde llegaron ante una puerta alta y oscura. Sobre ella, en color sombrío, había unas palabras escritas que ningún vivo debería leer.",
   "meta_modelo": "",
+  "clima": "",
+  "lentitud": 1,
   "terreno": {
     "tipo": "pasto",
     "colinas": 0.9,
