@@ -20,8 +20,9 @@ namespace Forja3D
         [TextArea] public string transicion; // pergamino final: hacia dónde va Dante
 
         public static bool Terminado { get; private set; }
+        public static bool Pausado { get; private set; }
         // Bloquea al jugador y a los enemigos (fin del nivel o diálogo abierto)
-        public static bool Bloqueado => Terminado || Forja3DDialogue.Activo || Forja3DPergamino.Activo;
+        public static bool Bloqueado => Terminado || Pausado || Forja3DDialogue.Activo || Forja3DPergamino.Activo;
         static Forja3DGameManager inst;
         static int enemigos, derrotados, monedas, recogidas, jefes, jefesDerrotados, claves, clavesOidas;
         static System.Collections.Generic.List<Forja3DHealth> vidasJefe = new System.Collections.Generic.List<Forja3DHealth>();
@@ -73,9 +74,8 @@ namespace Forja3D
 
         void Awake()
         {
-            // EXPANSIÓN FUTURA: en PC conviene un menú de pausa (Escape), opciones de gráficos y resolución;
-            // en iOS/Android, pausar al salir de la app (OnApplicationPause). Hoy el juego no tiene menú.
-            inst = this; Terminado = false;
+            // Esc (o el botón Atrás en Android) abre el menú de pausa. EXPANSIÓN FUTURA: opciones de gráficos y resolución.
+            inst = this; Terminado = false; Pausado = false; AudioListener.pause = false;
             enemigos = derrotados = monedas = recogidas = jefes = jefesDerrotados = claves = clavesOidas = 0; vidasJefe.Clear(); nombresJefe.Clear();
             Time.timeScale = 1f;
             Application.targetFrameRate = 60; // PC: dejar -1 y usar QualitySettings.vSyncCount = 1
@@ -107,7 +107,71 @@ namespace Forja3D
         }
         Text textoXP; string xpFlotante; float xpFlotanteHasta;
 
-        void OnDestroy() { if (inst == this) inst = null; Forja3DProgreso.AlGanar -= XPGanada; }
+        void OnDestroy()
+        {
+            if (inst == this) inst = null;
+            Forja3DProgreso.AlGanar -= XPGanada;
+            Pausado = false; AudioListener.pause = false;
+            Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
+        }
+
+        // ---------- Menú de pausa (Esc) ----------
+        GameObject panelPausa;
+
+        void AlternarPausa() { if (Pausado) Reanudar(); else Pausar(); }
+
+        void Pausar()
+        {
+            Pausado = true; Time.timeScale = 0f; AudioListener.pause = true;
+            if (!panelPausa) CrearPausa();
+            panelPausa.SetActive(true);
+        }
+
+        void Reanudar()
+        {
+            Pausado = false; Time.timeScale = 1f; AudioListener.pause = false;
+            if (panelPausa) panelPausa.SetActive(false);
+        }
+
+        void IrAlMenu()
+        {
+            Pausado = false; Time.timeScale = 1f; AudioListener.pause = false;
+            PlayerPrefs.Save();
+            SceneManager.LoadScene(0);
+        }
+
+        void CrearPausa()
+        {
+            var cGo = new GameObject("Pausa", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var c = cGo.GetComponent<Canvas>(); c.renderMode = RenderMode.ScreenSpaceOverlay; c.sortingOrder = 200;
+            var esc = cGo.GetComponent<CanvasScaler>();
+            esc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; esc.referenceResolution = new Vector2(1920, 1080); esc.matchWidthOrHeight = 0.5f;
+            panelPausa = new GameObject("Panel", typeof(RectTransform), typeof(Image));
+            panelPausa.transform.SetParent(cGo.transform, false);
+            var r = panelPausa.GetComponent<RectTransform>(); r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.offsetMin = r.offsetMax = Vector2.zero;
+            panelPausa.GetComponent<Image>().color = new Color(0.03f, 0.01f, 0.01f, 0.85f);
+            var t = Texto(panelPausa.transform, "PAUSA", 110, TextAnchor.MiddleCenter);
+            t.color = new Color(0.92f, 0.75f, 0.42f); t.fontStyle = FontStyle.Bold;
+            t.rectTransform.anchorMin = new Vector2(0, 0.62f); t.rectTransform.anchorMax = new Vector2(1, 0.82f);
+            Forja3DTitle.Boton(panelPausa.transform, "CONTINUAR", new Vector2(0.5f, 0.5f), Reanudar);
+            Forja3DTitle.Boton(panelPausa.transform, "MENÚ PRINCIPAL", new Vector2(0.5f, 0.38f), IrAlMenu);
+            var a = Texto(panelPausa.transform, Application.isMobilePlatform ? "" : "Esc para continuar", 30, TextAnchor.MiddleCenter);
+            a.color = new Color(1, 1, 1, 0.5f); a.rectTransform.anchorMin = new Vector2(0, 0.2f); a.rectTransform.anchorMax = new Vector2(1, 0.28f);
+            panelPausa.SetActive(false);
+        }
+
+        void LateUpdate()
+        {
+            if (Input.GetKeyDown(KeyCode.Escape)) AlternarPausa();
+            if (Pausado) Time.timeScale = 0f; // por si un golpe (hit-stop) o una cámara lenta intentó reanudar el tiempo
+            if (!Application.isMobilePlatform)
+            {
+                // PC: el ratón queda capturado mientras se juega y se libera en menús, diálogos y pergaminos
+                bool libre = Bloqueado || Forja3DInput.EsTactil || !Application.isFocused;
+                var modo = libre ? CursorLockMode.None : CursorLockMode.Locked;
+                if (Cursor.lockState != modo) { Cursor.lockState = modo; Cursor.visible = libre; }
+            }
+        }
 
         string ObjetivoTexto() => objetivo switch
         {

@@ -115,7 +115,7 @@ namespace Forja3D
         {
             if (!pieTxt || escribiendo || cerrando) return;
             var c = pieTxt.color; c.a = 0.55f + 0.35f * Mathf.Sin((Time.unscaledTime - listoDesde) * 2.5f); pieTxt.color = c;
-            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) Tocar();
+            if (!Forja3DGameManager.Pausado && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))) Tocar();
         }
 
         void Tocar()

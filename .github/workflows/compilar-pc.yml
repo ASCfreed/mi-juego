@@ -88,6 +88,6 @@ jobs:
         with:
           tag_name: pc-${{ github.run_number }}
           name: "${{ inputs.nombre_app }} PC v${{ inputs.version }} (compilación ${{ github.run_number }})"
-          body: "Juego para Windows 64 bits generado por Forja3D (${{ steps.zip.outputs.tam }}). Descomprime el ZIP y abre Juego.exe. Controles: WASD mover, ratón derecho girar cámara, clic izquierdo atacar, Q cubrir, E esquivar, Espacio saltar, Shift correr, F cuerda."
+          body: "Juego para Windows 64 bits generado por Forja3D (${{ steps.zip.outputs.tam }}). Descomprime el ZIP y abre Juego.exe. Controles: WASD mover, ratón girar cámara, clic izquierdo atacar, clic derecho o Q cubrir, E esquivar, Espacio saltar, Shift correr, F cuerda, Esc pausa."
           files: juego-pc.zip
           make_latest: false

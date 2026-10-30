@@ -26,6 +26,8 @@ namespace Forja3D
         void Start()
         {
             Application.targetFrameRate = 60;
+            Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
+            Time.timeScale = 1f; AudioListener.pause = false;
             var cam = Camera.main;
             if (cam) { cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = colorFondo; }
             if (!FindObjectOfType<EventSystem>()) new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
@@ -56,6 +58,22 @@ namespace Forja3D
             Boton(raiz, "COMENZAR", new Vector2(0.5f, y), () => { PlayerPrefs.SetInt(ClaveProgreso, 1); SceneManager.LoadScene(1); });
             if (continuar) { y -= 0.11f; Boton(raiz, "CONTINUAR", new Vector2(0.5f, y), () => SceneManager.LoadScene(guardado)); }
             if (total > 2) { y -= 0.11f; Boton(raiz, "SELECCIONAR NIVEL", new Vector2(0.5f, y), AbrirNiveles); }
+            y -= 0.11f; Boton(raiz, "SALIR", new Vector2(0.5f, y), Salir);
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Escape) && panelNiveles && panelNiveles.activeSelf) panelNiveles.SetActive(false);
+        }
+
+        public static void Salir()
+        {
+            PlayerPrefs.Save();
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
 
         void AbrirNiveles()
@@ -85,7 +103,7 @@ namespace Forja3D
             Boton(panelNiveles.transform, "VOLVER", new Vector2(0.5f, 0.07f), () => panelNiveles.SetActive(false), new Vector2(360, 100), 40);
         }
 
-        static Button Boton(Transform padre, string texto, Vector2 ancla, UnityEngine.Events.UnityAction accion, Vector2? tam = null, int letra = 46)
+        public static Button Boton(Transform padre, string texto, Vector2 ancla, UnityEngine.Events.UnityAction accion, Vector2? tam = null, int letra = 46)
         {
             var go = new GameObject(texto, typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(padre, false);
