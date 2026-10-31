@@ -271,26 +271,26 @@ namespace Forja3D.EditorTools
             for (int f = 0; f < filas; f++)
                 for (int col = 0; col < cols; col++)
                 {
-                    var s = Sim(n, leyenda, f, col);
-                    if (s == null || !s.pisable || s.tipo != "decoracion") continue;
-                    var g = InstanciarModelo(s.modelo);
-                    if (!g) continue;
-                    foreach (var cc in g.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
-                    var b = Forja3DImporter.Limites(g);
-                    if (b.size.z > b.size.x) { g.transform.rotation = Quaternion.Euler(0, 90, 0) * g.transform.rotation; b = Forja3DImporter.Limites(g); }
+                    var sp = Sim(n, leyenda, f, col);
+                    if (sp == null || !sp.pisable || sp.tipo != "decoracion") continue;
+                    var gb = InstanciarModelo(sp.modelo);
+                    if (!gb) continue;
+                    foreach (var ccb in gb.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(ccb);
+                    var lb = Forja3DImporter.Limites(gb);
+                    if (lb.size.z > lb.size.x) { gb.transform.rotation = Quaternion.Euler(0, 90, 0) * gb.transform.rotation; lb = Forja3DImporter.Limites(gb); }
                     // escala = largo en celdas (a lo largo de las columnas del mapa)
-                    float kx = Mathf.Max(1f, s.escala) * c / Mathf.Max(0.01f, b.size.x);
+                    float kxB = Mathf.Max(1f, sp.escala) * c / Mathf.Max(0.01f, lb.size.x);
                     // A lo alto no se escala igual: la borda queda a ~1,2 m sobre la cubierta y no tapa la pelea
-                    float ky = Mathf.Min(kx, 2.6f / Mathf.Max(0.01f, b.size.y));
-                    var esc = g.transform.localScale; g.transform.localScale = new Vector3(esc.x * kx, esc.y * ky, esc.z * kx);
-                    b = Forja3DImporter.Limites(g);
-                    var raiz = new GameObject("BarcaCubierta"); raiz.transform.SetParent(nivel.transform);
-                    raiz.transform.position = Pos(f, col);
-                    g.transform.SetParent(raiz.transform, true);
+                    float kyB = Mathf.Min(kxB, 2.6f / Mathf.Max(0.01f, lb.size.y));
+                    var escB = gb.transform.localScale; gb.transform.localScale = new Vector3(escB.x * kxB, escB.y * kyB, escB.z * kxB);
+                    lb = Forja3DImporter.Limites(gb);
+                    var raizB = new GameObject("BarcaCubierta"); raizB.transform.SetParent(nivel.transform);
+                    raizB.transform.position = Pos(f, col);
+                    gb.transform.SetParent(raizB.transform, true);
                     // El fondo del casco queda bajo el suelo: la cubierta coincide con el terreno
-                    g.transform.position += new Vector3(raiz.transform.position.x - b.center.x, raiz.transform.position.y - b.min.y - b.size.y * 0.5f, raiz.transform.position.z - b.center.z);
-                    foreach (var r in g.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    raiz.AddComponent<Forja3DBarca>();
+                    gb.transform.position += new Vector3(raizB.transform.position.x - lb.center.x, raizB.transform.position.y - lb.min.y - lb.size.y * 0.5f, raizB.transform.position.z - lb.center.z);
+                    foreach (var rb in gb.GetComponentsInChildren<Renderer>()) rb.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    raizB.AddComponent<Forja3DBarca>();
                 }
 
             Vector3? inicio = null, meta = null;
